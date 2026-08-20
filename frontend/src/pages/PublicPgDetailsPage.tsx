@@ -1,17 +1,31 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Heart, Scale } from 'lucide-react';
+import {
+  Bath,
+  BedDouble,
+  Building2,
+  CheckCircle2,
+  ChevronLeft,
+  Heart,
+  Home,
+  MapPin,
+  Scale,
+  Utensils,
+  X
+} from 'lucide-react';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { publicApi } from '../api/public.api';
 import { wishlistApi } from '../api/wishlist.api';
 import { BookingModal } from '../components/BookingModal';
+import { EmptyState } from '../components/EmptyState';
 import { FormMessage } from '../components/FormMessage';
-import { PageHeader } from '../components/PageHeader';
 import { StatusBadge } from '../components/StatusBadge';
 import { useAuthStore } from '../store/authStore';
+import type { PublicPgDetails, PublicRoomAvailability } from '../types/property';
 import { getApiErrorMessage } from '../utils/apiError';
 import { toAssetUrl } from '../utils/assets';
-import { addCompareItem } from '../utils/compareStore';
+import { addCompareItem, getCompareItems } from '../utils/compareStore';
 
 export function PublicPgDetailsPage() {
   const { slug } = useParams();
@@ -20,6 +34,10 @@ export function PublicPgDetailsPage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [message, setMessage] = useState<string | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [initialRoomId, setInitialRoomId] = useState<number | undefined>();
+  const [initialBedId, setInitialBedId] = useState<number | undefined>();
+  const [photoIndex, setPhotoIndex] = useState<number | null>(null);
+  const [compareItems, setCompareItems] = useState(() => getCompareItems());
 
   const pgQuery = useQuery({
     queryKey: ['public-pg', slug],
@@ -46,15 +64,25 @@ export function PublicPgDetailsPage() {
   });
 
   if (pgQuery.isLoading) {
-    return <div className="route-state">Loading PG</div>;
+    return <DetailsSkeleton />;
   }
 
   if (pgQuery.isError || !pgQuery.data) {
-    return <div className="route-state">{getApiErrorMessage(pgQuery.error, 'Unable to load PG')}</div>;
+    return (
+      <EmptyState
+        title="We couldn't load this PG."
+        description={getApiErrorMessage(pgQuery.error, 'The listing may be unavailable or no longer public.')}
+        action={<Link className="secondary-link" to="/find-pg">Back to Find PG</Link>}
+      />
+    );
   }
 
   const pg = pgQuery.data;
   const wishlisted = (wishlistQuery.data ?? []).some((item) => item.property.id === pg.id);
+  const compared = compareItems.some((item) => item.id === pg.id);
+  const gallery = pg.gallery.filter((image) => image.imageUrl);
+  const firstAvailableRoom = pg.availableRooms.find((room) => room.beds.length > 0);
+  const hasAvailability = Boolean(firstAvailableRoom);
 
   const toggleWishlist = () => {
     if (!isAuthenticated) {
@@ -74,7 +102,7 @@ export function PublicPgDetailsPage() {
         id: pg.id,
         slug: pg.slug,
         name: pg.name,
-        coverImage: pg.gallery[0]?.imageUrl,
+        coverImage: gallery[0]?.imageUrl,
         area: pg.area,
         city: pg.city,
         genderType: pg.genderType,
@@ -87,168 +115,184 @@ export function PublicPgDetailsPage() {
         verificationStatus: 'VERIFIED',
         amenities: pg.amenities
       });
+      setCompareItems(items);
       setMessage(`${items.length} PG${items.length === 1 ? '' : 's'} selected for comparison.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Unable to add PG to comparison.');
     }
   };
 
-  const openBooking = () => {
+  const openBooking = (room?: PublicRoomAvailability, bedId?: number) => {
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
+    setInitialRoomId(room?.roomId ?? firstAvailableRoom?.roomId);
+    setInitialBedId(bedId ?? room?.beds[0]?.id ?? firstAvailableRoom?.beds[0]?.id);
     setBookingOpen(true);
   };
 
   return (
-    <div className="stack">
-      <PageHeader
-        eyebrow="PG details"
-        title={pg.name}
-        actions={
-          <div className="action-row">
-            <Link className="secondary-link" to="/find-pg">Back</Link>
-            <button className={`secondary-button ${wishlisted ? 'button-active' : ''}`} type="button" onClick={toggleWishlist}>
-              <Heart size={17} fill={wishlisted ? 'currentColor' : 'none'} />
-              Favourite
-            </button>
-            <button className="secondary-button" type="button" onClick={compare}>
-              <Scale size={17} />
-              Compare
-            </button>
+    <div className="pg-detail-page">
+      <nav className="breadcrumb" aria-label="Breadcrumb">
+        <Link to="/">Home</Link>
+        <span>/</span>
+        <Link to={`/find-pg?city=${encodeURIComponent(pg.city)}`}>{pg.city}</Link>
+        <span>/</span>
+        <Link to={`/find-pg?area=${encodeURIComponent(pg.area)}`}>{pg.area}</Link>
+        <span>/</span>
+        <span>{pg.name}</span>
+      </nav>
+
+      <header className="pg-detail-header">
+        <div>
+          <div className="badge-row">
+            <span className="verified-chip"><CheckCircle2 size={15} /> Verified</span>
+            <StatusBadge status={pg.genderType} />
+            <StatusBadge status={pg.propertyType} />
           </div>
-        }
-      />
-      <FormMessage message={message} tone={message?.startsWith('Unable') ? 'error' : 'success'} />
-
-      <section className="public-gallery">
-        {(pg.gallery.length ? pg.gallery : [{ id: 0, imageUrl: '', category: 'OTHER', propertyId: pg.id, coverImage: false, sortOrder: 0, createdAt: '' }]).map((image) => (
-          image.imageUrl ? (
-            <img key={image.id} src={toAssetUrl(image.imageUrl)} alt={image.category.replaceAll('_', ' ')} />
-          ) : (
-            <div className="public-gallery-empty" key="empty">StaySure</div>
-          )
-        ))}
-      </section>
-
-      <section className="surface status-surface">
-        <div>
-          <h2>{pg.area}, {pg.city}</h2>
-          <p>{pg.addressLine1}{pg.addressLine2 ? `, ${pg.addressLine2}` : ''}, {pg.state} {pg.pincode}</p>
+          <h1>{pg.name}</h1>
+          <p><MapPin size={17} /> {pg.area}, {pg.city}</p>
         </div>
-        <div className="badge-row">
-          <StatusBadge status="VERIFIED" />
-          <StatusBadge status={pg.genderType} />
-          <StatusBadge status={pg.propertyType} />
-        </div>
-      </section>
-
-      <section className="surface detail-grid">
-        <div>
-          <span>Starting rent</span>
-          <strong>Rs {Number(pg.startingRent).toLocaleString()}</strong>
-        </div>
-        <div>
-          <span>Security deposit</span>
-          <strong>Rs {Number(pg.securityDeposit).toLocaleString()}</strong>
-        </div>
-        <div>
-          <span>Available beds</span>
-          <strong>{pg.availableBedCount} / {pg.totalBedCount}</strong>
-        </div>
-        <div>
-          <span>Food</span>
-          <strong>{pg.foodAvailable ? 'Available' : 'Not available'}</strong>
-        </div>
-        <div>
-          <span>Booking</span>
-          <button className="primary-button compact-button" type="button" disabled={pg.availableBedCount === 0} onClick={openBooking}>
-            Request
+        <div className="pg-detail-actions">
+          <button className={`secondary-button ${wishlisted ? 'button-active' : ''}`} type="button" onClick={toggleWishlist}>
+            <Heart size={17} fill={wishlisted ? 'currentColor' : 'none'} />
+            {wishlisted ? 'Saved' : 'Wishlist'}
+          </button>
+          <button className={`secondary-button ${compared ? 'button-active' : ''}`} type="button" onClick={compare}>
+            <Scale size={17} />
+            {compared ? 'Added to Compare' : 'Compare'}
           </button>
         </div>
+      </header>
+
+      <FormMessage message={message} tone={message?.startsWith('Unable') ? 'error' : 'success'} />
+
+      <section className="detail-gallery" aria-label="Property photos">
+        {gallery.length ? (
+          gallery.slice(0, 5).map((image, index) => (
+            <button className="gallery-tile" type="button" key={image.id} onClick={() => setPhotoIndex(index)}>
+              <img src={toAssetUrl(image.imageUrl)} alt={image.category.replaceAll('_', ' ')} />
+              {index === 4 && gallery.length > 5 ? <span>View all photos</span> : null}
+            </button>
+          ))
+        ) : (
+          <div className="detail-gallery-empty">StaySure</div>
+        )}
+        {gallery.length > 0 ? (
+          <button className="secondary-button gallery-view-button" type="button" onClick={() => setPhotoIndex(0)}>
+            View All Photos
+          </button>
+        ) : null}
       </section>
 
-      <section className="surface">
-        <h2>Overview</h2>
-        <p className="muted-copy">{pg.description || 'No description provided.'}</p>
+      <section className="detail-facts">
+        <Fact label="Starting Rent" value={`Rs ${Number(pg.startingRent).toLocaleString()}`} />
+        <Fact label="Security Deposit" value={`Rs ${Number(pg.securityDeposit).toLocaleString()}`} />
+        <Fact label="Available Beds" value={`${pg.availableBedCount} / ${pg.totalBedCount}`} />
+        <Fact label="Food" value={pg.foodAvailable ? 'Available' : 'Not available'} icon={<Utensils size={18} />} />
       </section>
 
-      <section className="surface">
-        <h2>Available Rooms</h2>
-        <div className="room-availability-grid">
-          {pg.availableRooms.map((room) => (
-            <article className="availability-card" key={room.roomId}>
+      <div className="detail-content-layout">
+        <main className="detail-main">
+          {pg.description ? (
+            <section className="surface detail-section">
+              <h2>About this PG</h2>
+              <p>{pg.description}</p>
+            </section>
+          ) : null}
+
+          <section className="surface detail-section">
+            <h2>Amenities</h2>
+            {pg.amenities.length ? (
+              <div className="amenity-showcase">
+                {pg.amenities.map((amenity) => <span className="amenity-pill" key={amenity.id}>{amenity.name}</span>)}
+              </div>
+            ) : (
+              <p className="muted-copy">No amenities listed.</p>
+            )}
+          </section>
+
+          <section className="surface detail-section">
+            <div className="section-heading">
               <div>
-                <strong>{room.sharingType.replaceAll('_', ' ')}</strong>
-                <span>Room {room.roomNumber}</span>
+                <h2>Available Rooms</h2>
+                <p className="muted-copy">Only available beds returned by the public API are selectable.</p>
               </div>
-              <div>
-                <span>Rent</span>
-                <strong>Rs {Number(room.monthlyRent).toLocaleString()}/month</strong>
+            </div>
+            {pg.availableRooms.length ? (
+              <div className="room-list">
+                {pg.availableRooms.map((room) => (
+                  <RoomAvailabilityCard key={room.roomId} room={room} onBook={openBooking} />
+                ))}
               </div>
-              <div>
-                <span>Available beds</span>
-                <strong>{room.availableBeds}</strong>
-              </div>
-              <div>
-                <span>Bookable beds</span>
-                <strong>{room.beds.map((bed) => bed.bedLabel || bed.bedNumber).join(', ')}</strong>
-              </div>
-              <div className="badge-row">
-                {room.acAvailable ? <StatusBadge status="AC" /> : null}
-                {room.attachedBathroom ? <StatusBadge status="BATHROOM" /> : null}
-                <StatusBadge status={room.furnishingType} />
-              </div>
-            </article>
-          ))}
-          {pg.availableRooms.length === 0 ? <p>No beds are currently available.</p> : null}
-        </div>
-      </section>
+            ) : (
+              <div className="empty-state">No beds are currently available. Booking requests are disabled until a bed opens.</div>
+            )}
+          </section>
 
-      <section className="surface">
-        <h2>Amenities</h2>
-        <div className="amenity-grid">
-          {pg.amenities.map((amenity) => <span className="amenity-pill" key={amenity.id}>{amenity.name}</span>)}
-          {pg.amenities.length === 0 ? <p>No amenities listed.</p> : null}
-        </div>
-      </section>
+          <section className="surface detail-section">
+            <h2>House Rules</h2>
+            <div className="rules-showcase">
+              <Rule label="Visitors" value={pg.rules?.visitorAllowed ? 'Allowed' : 'Not allowed'} />
+              <Rule label="Smoking" value={pg.rules?.smokingAllowed ? 'Allowed' : 'Not allowed'} />
+              <Rule label="Alcohol" value={pg.rules?.alcoholAllowed ? 'Allowed' : 'Not allowed'} />
+              <Rule label="Cooking" value={pg.rules?.cookingAllowed ? 'Allowed' : 'Not allowed'} />
+              <Rule label="Late entry" value={pg.rules?.lateEntryAllowed ? 'Allowed' : 'Not allowed'} />
+              <Rule label="Gate closing" value={pg.rules?.gateClosingTime ? pg.rules.gateClosingTime.slice(0, 5) : 'Not set'} />
+              <Rule label="Notice period" value={`${pg.noticePeriodDays} days`} />
+              <Rule label="Lock-in" value={`${pg.lockInMonths} months`} />
+              <Rule label="Entry time" value={pg.entryTime ? pg.entryTime.slice(0, 5) : 'Not set'} />
+            </div>
+            {pg.rules?.additionalRules ? <p className="muted-copy">{pg.rules.additionalRules}</p> : null}
+          </section>
 
-      <section className="surface rule-grid">
-        <div>
-          <span>Visitors</span>
-          <strong>{pg.rules?.visitorAllowed ? 'Allowed' : 'Not allowed'}</strong>
-        </div>
-        <div>
-          <span>Gate closing</span>
-          <strong>{pg.rules?.gateClosingTime ? pg.rules.gateClosingTime.slice(0, 5) : 'Not set'}</strong>
-        </div>
-        <div>
-          <span>Notice period</span>
-          <strong>{pg.noticePeriodDays} days</strong>
-        </div>
-        <div>
-          <span>Lock-in</span>
-          <strong>{pg.lockInMonths} months</strong>
-        </div>
-        <div>
-          <span>Entry time</span>
-          <strong>{pg.entryTime ? pg.entryTime.slice(0, 5) : 'Not set'}</strong>
-        </div>
-        <div>
-          <span>Owner</span>
-          <strong>{pg.owner?.businessName ?? 'StaySure owner'}</strong>
-        </div>
-      </section>
+          <section className="surface detail-section">
+            <h2>Location</h2>
+            <div className="location-card">
+              <MapPin size={20} />
+              <p>
+                {pg.addressLine1}{pg.addressLine2 ? `, ${pg.addressLine2}` : ''}, {pg.area}, {pg.city}, {pg.state} {pg.pincode}
+              </p>
+            </div>
+          </section>
+        </main>
 
-      <section className="surface">
-        <h2>Location</h2>
-        <p className="muted-copy">{pg.area}, {pg.city}, {pg.state}</p>
-      </section>
+        <aside className="booking-summary-card">
+          <span className="verified-chip"><CheckCircle2 size={15} /> Verified listing</span>
+          <div>
+            <span>Starting from</span>
+            <strong>Rs {Number(pg.startingRent).toLocaleString()}<small>/month</small></strong>
+          </div>
+          <div className="booking-summary-row">
+            <span>Security Deposit</span>
+            <strong>Rs {Number(pg.securityDeposit).toLocaleString()}</strong>
+          </div>
+          <div className="booking-summary-row">
+            <span>Available Beds</span>
+            <strong>{pg.availableBedCount}</strong>
+          </div>
+          <button className="primary-button" type="button" disabled={!hasAvailability} onClick={() => openBooking()}>
+            Request Booking
+          </button>
+          <p>Booking request is reviewed by the PG owner.</p>
+        </aside>
+      </div>
+
+      {photoIndex !== null ? (
+        <GalleryModal
+          pg={pg}
+          index={photoIndex}
+          setIndex={setPhotoIndex}
+          onClose={() => setPhotoIndex(null)}
+        />
+      ) : null}
 
       {bookingOpen ? (
         <BookingModal
           pg={pg}
+          initialRoomId={initialRoomId}
+          initialBedId={initialBedId}
           onClose={() => setBookingOpen(false)}
           onSuccess={(bookingId) => {
             setBookingOpen(false);
@@ -257,6 +301,114 @@ export function PublicPgDetailsPage() {
           }}
         />
       ) : null}
+    </div>
+  );
+}
+
+function Fact({ label, value, icon }: { label: string; value: string; icon?: ReactNode }) {
+  return (
+    <article>
+      <span>{icon}{label}</span>
+      <strong>{value}</strong>
+    </article>
+  );
+}
+
+function RoomAvailabilityCard({ room, onBook }: { room: PublicRoomAvailability; onBook: (room: PublicRoomAvailability, bedId?: number) => void }) {
+  return (
+    <article className="room-card">
+      <div className="room-card__header">
+        <div>
+          <h3>{room.sharingType.replaceAll('_', ' ')}</h3>
+          <p>Room {room.roomNumber}</p>
+        </div>
+        <span className="availability-pill"><BedDouble size={15} /> {room.availableBeds} beds available</span>
+      </div>
+      <div className="room-card__facts">
+        <Fact label="Monthly Rent" value={`Rs ${Number(room.monthlyRent).toLocaleString()}`} />
+        <Fact label="Deposit" value={`Rs ${Number(room.securityDeposit).toLocaleString()}`} />
+        <Fact label="Capacity" value={String(room.capacity)} />
+      </div>
+      <div className="room-card__features">
+        {room.acAvailable ? <span><Home size={14} /> AC</span> : null}
+        {room.attachedBathroom ? <span><Bath size={14} /> Attached bathroom</span> : null}
+        <span><Building2 size={14} /> {room.furnishingType.replaceAll('_', ' ')}</span>
+      </div>
+      <div className="bed-selection-preview">
+        {room.beds.map((bed) => (
+          <button className="bed-select-chip" type="button" key={bed.id} onClick={() => onBook(room, bed.id)}>
+            {bed.bedLabel || `Bed ${bed.bedNumber}`}
+          </button>
+        ))}
+      </div>
+      <button className="secondary-button" type="button" disabled={room.beds.length === 0} onClick={() => onBook(room)}>
+        Select Room
+      </button>
+    </article>
+  );
+}
+
+function Rule({ label, value }: { label: string; value: string }) {
+  return (
+    <article>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </article>
+  );
+}
+
+function GalleryModal({
+  pg,
+  index,
+  setIndex,
+  onClose
+}: {
+  pg: PublicPgDetails;
+  index: number;
+  setIndex: (index: number) => void;
+  onClose: () => void;
+}) {
+  const gallery = pg.gallery.filter((image) => image.imageUrl);
+  const image = gallery[index];
+  if (!image) return null;
+
+  return (
+    <div className="modal-backdrop gallery-modal-backdrop" role="presentation">
+      <div className="gallery-modal" role="dialog" aria-modal="true" aria-label={`${pg.name} photos`}>
+        <div className="gallery-modal__header">
+          <button className="icon-button" type="button" onClick={() => setIndex(Math.max(index - 1, 0))} disabled={index === 0} aria-label="Previous photo">
+            <ChevronLeft size={18} />
+          </button>
+          <strong>{index + 1} of {gallery.length}</strong>
+          <button className="icon-button" type="button" onClick={onClose} aria-label="Close gallery">
+            <X size={18} />
+          </button>
+        </div>
+        <img src={toAssetUrl(image.imageUrl)} alt={image.category.replaceAll('_', ' ')} />
+        <div className="gallery-modal__thumbs">
+          {gallery.map((item, itemIndex) => (
+            <button
+              className={itemIndex === index ? 'gallery-thumb gallery-thumb--active' : 'gallery-thumb'}
+              type="button"
+              key={item.id}
+              onClick={() => setIndex(itemIndex)}
+              aria-label={`Open photo ${itemIndex + 1}`}
+            >
+              <img src={toAssetUrl(item.imageUrl)} alt="" />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailsSkeleton() {
+  return (
+    <div className="pg-detail-page">
+      <div className="detail-skeleton detail-skeleton--title" />
+      <div className="detail-skeleton detail-skeleton--gallery" />
+      <div className="detail-skeleton detail-skeleton--body" />
     </div>
   );
 }

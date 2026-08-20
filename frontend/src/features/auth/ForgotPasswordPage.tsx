@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { authApi } from '../../api/auth.api';
+import { AuthLayout } from '../../components/AuthLayout';
 import { FormMessage } from '../../components/FormMessage';
 import { getApiErrorMessage } from '../../utils/apiError';
 
@@ -35,28 +36,30 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <section className="auth-panel">
-      <div className="auth-box">
-        <p className="eyebrow">Account recovery</p>
-        <h1>Forgot Password</h1>
-        <form onSubmit={handleSubmit(onSubmit)} className="form-grid">
-          <label>
-            Email
-            <input type="email" autoComplete="email" {...register('email')} />
-            <FormMessage message={errors.email?.message} />
-          </label>
-          <FormMessage message={error} />
-          <FormMessage message={success} tone="success" />
-          <button className="primary-button" type="submit" disabled={isSubmitting}>
-            <Mail size={18} />
-            {isSubmitting ? 'Sending' : 'Send reset link'}
-          </button>
-        </form>
-        <div className="auth-links">
+    <AuthLayout
+      eyebrow="Account recovery"
+      title="Reset access to your account"
+      subtitle="Enter your registered email. If it exists, the backend will process the reset request."
+      footer={(
+        <>
           <Link to="/login">Back to login</Link>
           <Link to="/reset-password">I have a token</Link>
-        </div>
-      </div>
-    </section>
+        </>
+      )}
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="form-grid">
+        <label>
+          Email
+          <input type="email" autoComplete="email" placeholder="you@example.com" {...register('email')} />
+          <FormMessage message={errors.email?.message} />
+        </label>
+        <FormMessage message={error} />
+        <FormMessage message={success} tone="success" />
+        <button className="primary-button primary-button--full" type="submit" disabled={isSubmitting}>
+          <Mail size={18} />
+          {isSubmitting ? 'Sending' : 'Send reset link'}
+        </button>
+      </form>
+    </AuthLayout>
   );
 }

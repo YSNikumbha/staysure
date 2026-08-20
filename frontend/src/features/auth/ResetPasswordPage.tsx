@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { KeyRound } from 'lucide-react';
+import { Eye, EyeOff, KeyRound } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { authApi } from '../../api/auth.api';
+import { AuthLayout } from '../../components/AuthLayout';
 import { FormMessage } from '../../components/FormMessage';
 import { getApiErrorMessage } from '../../utils/apiError';
 
@@ -25,6 +26,7 @@ type ResetForm = z.infer<typeof resetSchema>;
 export function ResetPasswordPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -42,41 +44,57 @@ export function ResetPasswordPage() {
   };
 
   return (
-    <section className="auth-panel">
-      <div className="auth-box">
-        <p className="eyebrow">Account recovery</p>
-        <h1>Reset Password</h1>
-        <form onSubmit={handleSubmit(onSubmit)} className="form-grid">
-          <label>
-            Email
-            <input type="email" autoComplete="email" {...register('email')} />
-            <FormMessage message={errors.email?.message} />
-          </label>
-          <label>
-            Reset token
-            <input {...register('token')} />
-            <FormMessage message={errors.token?.message} />
-          </label>
-          <label>
-            New password
-            <input type="password" autoComplete="new-password" {...register('newPassword')} />
-            <FormMessage message={errors.newPassword?.message} />
-          </label>
-          <label>
-            Confirm password
-            <input type="password" autoComplete="new-password" {...register('confirmPassword')} />
-            <FormMessage message={errors.confirmPassword?.message} />
-          </label>
-          <FormMessage message={error} />
-          <button className="primary-button" type="submit" disabled={isSubmitting}>
-            <KeyRound size={18} />
-            {isSubmitting ? 'Resetting' : 'Reset password'}
-          </button>
-        </form>
-        <div className="auth-links">
-          <Link to="/login">Back to login</Link>
-        </div>
-      </div>
-    </section>
+    <AuthLayout
+      eyebrow="Account recovery"
+      title="Create a new password"
+      subtitle="Use the reset token from the recovery flow and choose a secure new password."
+      footer={<Link to="/login">Back to login</Link>}
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="form-grid">
+        <label>
+          Email
+          <input type="email" autoComplete="email" placeholder="you@example.com" {...register('email')} />
+          <FormMessage message={errors.email?.message} />
+        </label>
+        <label>
+          Reset token
+          <input {...register('token')} />
+          <FormMessage message={errors.token?.message} />
+        </label>
+        <label>
+          New password
+          <span className="password-field">
+            <input type={showPassword ? 'text' : 'password'} autoComplete="new-password" {...register('newPassword')} />
+            <button
+              type="button"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              onClick={() => setShowPassword((value) => !value)}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </span>
+          <FormMessage message={errors.newPassword?.message} />
+        </label>
+        <label>
+          Confirm password
+          <span className="password-field">
+            <input type={showPassword ? 'text' : 'password'} autoComplete="new-password" {...register('confirmPassword')} />
+            <button
+              type="button"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              onClick={() => setShowPassword((value) => !value)}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </span>
+          <FormMessage message={errors.confirmPassword?.message} />
+        </label>
+        <FormMessage message={error} />
+        <button className="primary-button primary-button--full" type="submit" disabled={isSubmitting}>
+          <KeyRound size={18} />
+          {isSubmitting ? 'Resetting' : 'Reset password'}
+        </button>
+      </form>
+    </AuthLayout>
   );
 }

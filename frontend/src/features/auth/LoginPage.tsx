@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LogIn } from 'lucide-react';
+import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
+import { AuthLayout } from '../../components/AuthLayout';
 import { FormMessage } from '../../components/FormMessage';
 import { useAuthStore } from '../../store/authStore';
 import { getApiErrorMessage } from '../../utils/apiError';
@@ -20,6 +21,7 @@ export function LoginPage() {
   const location = useLocation();
   const login = useAuthStore((state) => state.login);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -38,32 +40,43 @@ export function LoginPage() {
   };
 
   return (
-    <section className="auth-panel">
-      <div className="auth-box">
-        <p className="eyebrow">Welcome back</p>
-        <h1>Login</h1>
-        <form onSubmit={handleSubmit(onSubmit)} className="form-grid">
-          <label>
-            Email
-            <input type="email" autoComplete="email" {...register('email')} />
-            <FormMessage message={errors.email?.message} />
-          </label>
-          <label>
-            Password
-            <input type="password" autoComplete="current-password" {...register('password')} />
-            <FormMessage message={errors.password?.message} />
-          </label>
-          <FormMessage message={error} />
-          <button className="primary-button" type="submit" disabled={isSubmitting}>
-            <LogIn size={18} />
-            {isSubmitting ? 'Signing in' : 'Login'}
-          </button>
-        </form>
-        <div className="auth-links">
-          <Link to="/forgot-password">Forgot password</Link>
+    <AuthLayout
+      eyebrow="Welcome back"
+      title="Login to StaySure"
+      subtitle="Continue to your profile, wishlist, bookings and owner tools."
+      footer={(
+        <>
+          <Link to="/forgot-password">Forgot password?</Link>
           <Link to="/register">Create account</Link>
-        </div>
-      </div>
-    </section>
+        </>
+      )}
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="form-grid">
+        <label>
+          Email
+          <input type="email" autoComplete="email" placeholder="you@example.com" {...register('email')} />
+          <FormMessage message={errors.email?.message} />
+        </label>
+        <label>
+          Password
+          <span className="password-field">
+            <input type={showPassword ? 'text' : 'password'} autoComplete="current-password" {...register('password')} />
+            <button
+              type="button"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              onClick={() => setShowPassword((value) => !value)}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </span>
+          <FormMessage message={errors.password?.message} />
+        </label>
+        <FormMessage message={error} />
+        <button className="primary-button primary-button--full" type="submit" disabled={isSubmitting}>
+          <LogIn size={18} />
+          {isSubmitting ? 'Signing in' : 'Login'}
+        </button>
+      </form>
+    </AuthLayout>
   );
 }

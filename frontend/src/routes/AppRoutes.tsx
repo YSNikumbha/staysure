@@ -19,6 +19,9 @@ import { AdminOwnerDetailPage } from '../features/admin/AdminOwnerDetailPage';
 import { ComparePage } from '../pages/ComparePage';
 import { FindPgPage } from '../pages/FindPgPage';
 import { HomePage } from '../pages/HomePage';
+import { AboutPage } from '../pages/AboutPage';
+import { ContactPage } from '../pages/ContactPage';
+import { ForOwnersPage } from '../pages/ForOwnersPage';
 import { PublicPgDetailsPage } from '../pages/PublicPgDetailsPage';
 import { WishlistPage } from '../pages/WishlistPage';
 import BookingsPage from '../pages/BookingsPage';
@@ -38,6 +41,9 @@ export function AppRoutes() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/find-pg" element={<FindPgPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/for-owners" element={<ForOwnersPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/pg/:slug" element={<PublicPgDetailsPage />} />
         <Route path="/compare" element={<ComparePage />} />
         <Route path="/login" element={<LoginPage />} />
