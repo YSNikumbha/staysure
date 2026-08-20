@@ -3768,6 +3768,38 @@ td a {
   color: var(--muted);
 }
 
+.rent-metric-tile span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rent-payment-list {
+  display: grid;
+  gap: 12px;
+}
+
+.rent-payment-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: #fbfcfb;
+  padding: 14px;
+}
+
+.rent-payment-row h3,
+.rent-payment-row p {
+  margin: 0;
+}
+
+.rent-payment-row p:not(.eyebrow) {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
 .detail-grid--compact {
   grid-template-columns: 1fr;
 }
@@ -3832,8 +3864,10 @@ td a {
 
   .owner-booking-card,
   .owner-tenant-card,
-  .owner-document-card {
+  .owner-document-card,
+  .rent-payment-row {
     grid-template-columns: 1fr;
+    display: grid;
   }
 
   .owner-workflow-stepper {

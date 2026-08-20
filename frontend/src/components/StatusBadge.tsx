@@ -18,6 +18,7 @@ const toneByStatus: Record<string, StatusTone> = {
   AWAITING_DEPOSIT: 'warning',
   AWAITING_AGREEMENT: 'warning',
   PARTIALLY_PAID: 'warning',
+  OVERDUE: 'danger',
   ISSUED: 'warning',
   CONFIRMED: 'success',
   CHECKED_IN: 'success',

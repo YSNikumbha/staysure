@@ -1,4 +1,4 @@
-import { ArrowLeft, BedDouble, Building2, LayoutDashboard, LogOut, Menu, UserRound, UsersRound, X } from 'lucide-react';
+import { ArrowLeft, BedDouble, Building2, LayoutDashboard, LogOut, Menu, UserRound, UsersRound, Wallet, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -16,6 +16,7 @@ const ownerLinks = [
   { to: '/owner/pgs', label: 'My PGs', icon: Building2 },
   { to: '/owner/bookings', label: 'Bookings', icon: BedDouble },
   { to: '/owner/tenants', label: 'Tenants', icon: UsersRound },
+  { to: '/owner/rent', label: 'Rent', icon: Wallet },
   { to: '/profile', label: 'Profile', icon: UserRound }
 ];
 

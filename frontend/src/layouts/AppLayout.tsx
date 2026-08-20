@@ -1,4 +1,4 @@
-import { Building2, ChevronDown, Heart, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, UserRound, X } from 'lucide-react';
+import { Building2, ChevronDown, Heart, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, Wallet, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -30,7 +30,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isOwnerWorkspace = location.pathname.startsWith('/owner/dashboard')
     || location.pathname.startsWith('/owner/pgs')
     || location.pathname.startsWith('/owner/bookings')
-    || location.pathname.startsWith('/owner/tenants');
+    || location.pathname.startsWith('/owner/tenants')
+    || location.pathname.startsWith('/owner/rent');
   const isAdminWorkspace = location.pathname.startsWith('/admin');
 
   if (isOwnerWorkspace || isAdminWorkspace) {
@@ -56,6 +57,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <>
               <NavLink to="/wishlist">Wishlist</NavLink>
               <NavLink to="/bookings">My Bookings</NavLink>
+              <NavLink to="/rent">Rent</NavLink>
             </>
           ) : (
             <NavLink to="/wishlist" aria-label="Wishlist"><Heart size={17} /></NavLink>
@@ -90,6 +92,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <div className="user-menu__panel">
                   <Link to="/profile">Profile</Link>
                   <Link to="/my-pg">My PG</Link>
+                  <Link to="/rent">Rent</Link>
                   <Link to="/wishlist">Wishlist</Link>
                   <Link to="/bookings">My Bookings</Link>
                   {!isOwner ? <Link to="/owner/apply">Become an Owner</Link> : null}
@@ -133,6 +136,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <>
                 <NavLink to="/wishlist">Wishlist</NavLink>
                 <NavLink to="/bookings">My Bookings</NavLink>
+                <NavLink to="/rent"><Wallet size={17} /> Rent</NavLink>
                 <NavLink to="/my-pg">My PG</NavLink>
                 <NavLink to="/profile">Profile</NavLink>
                 {!isOwner ? <NavLink to="/owner/apply">Become an Owner</NavLink> : null}

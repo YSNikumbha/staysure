@@ -32,6 +32,10 @@ import OwnerBookingDetailPage from '../pages/OwnerBookingDetailPage';
 import OwnerTenantsPage from '../pages/OwnerTenantsPage';
 import OwnerTenantDetailPage from '../pages/OwnerTenantDetailPage';
 import MyPgPage from '../pages/MyPgPage';
+import OwnerRentPage from '../pages/OwnerRentPage';
+import OwnerRentDetailPage from '../pages/OwnerRentDetailPage';
+import RentPage from '../pages/RentPage';
+import RentInvoiceDetailPage from '../pages/RentInvoiceDetailPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { RoleProtectedRoute } from './RoleProtectedRoute';
 
@@ -95,6 +99,22 @@ export function AppRoutes() {
           element={
             <ProtectedRoute>
               <MyPgPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rent"
+          element={
+            <ProtectedRoute>
+              <RentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rent/:id"
+          element={
+            <ProtectedRoute>
+              <RentInvoiceDetailPage />
             </ProtectedRoute>
           }
         />
@@ -199,6 +219,22 @@ export function AppRoutes() {
           element={
             <RoleProtectedRoute role="PG_OWNER">
               <OwnerTenantDetailPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/owner/rent"
+          element={
+            <RoleProtectedRoute role="PG_OWNER">
+              <OwnerRentPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/owner/rent/:id"
+          element={
+            <RoleProtectedRoute role="PG_OWNER">
+              <OwnerRentDetailPage />
             </RoleProtectedRoute>
           }
         />

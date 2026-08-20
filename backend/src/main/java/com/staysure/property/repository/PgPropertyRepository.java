@@ -17,6 +17,8 @@ public interface PgPropertyRepository extends JpaRepository<PgProperty, Long>, J
 
     List<PgProperty> findAllByOwnerAndStatusNotOrderByCreatedAtDesc(OwnerProfile owner, PropertyStatus status);
 
+    Optional<PgProperty> findByIdAndOwner(Long id, OwnerProfile owner);
+
     List<PgProperty> findAllByVerificationStatusOrderBySubmittedForVerificationAtDesc(PropertyVerificationStatus status);
 
     List<PgProperty> findAllByVerificationStatusInOrderBySubmittedForVerificationAtDesc(List<PropertyVerificationStatus> statuses);
