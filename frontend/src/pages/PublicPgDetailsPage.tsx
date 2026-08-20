@@ -7,7 +7,6 @@ import { wishlistApi } from '../api/wishlist.api';
 import { FormMessage } from '../components/FormMessage';
 import { PageHeader } from '../components/PageHeader';
 import { StatusBadge } from '../components/StatusBadge';
-import BookingModal from '../components/BookingModal';
 import { useAuthStore } from '../store/authStore';
 import { getApiErrorMessage } from '../utils/apiError';
 import { toAssetUrl } from '../utils/assets';
@@ -19,7 +18,6 @@ export function PublicPgDetailsPage() {
   const queryClient = useQueryClient();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [message, setMessage] = useState<string | null>(null);
-  const [showBookingModal, setShowBookingModal] = useState(false);
 
   const pgQuery = useQuery({
     queryKey: ['public-pg', slug],
@@ -66,11 +64,6 @@ export function PublicPgDetailsPage() {
     } else {
       addWishlist.mutate(pg.id);
     }
-  };
-
-  const handleBookingSuccess = () => {
-    setMessage('Booking request submitted successfully!');
-    queryClient.invalidateQueries({ queryKey: ['public-pg', slug] });
   };
 
   const compare = () => {
@@ -158,16 +151,6 @@ export function PublicPgDetailsPage() {
           <span>Food</span>
           <strong>{pg.foodAvailable ? 'Available' : 'Not available'}</strong>
         </div>
-        {isAuthenticated && pg.availableBedCount > 0 && (
-          <div className="col-span-full mt-4">
-            <button
-              onClick={() => setShowBookingModal(true)}
-              className="w-full px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold"
-            >
-              Request Booking
-            </button>
-          </div>
-        )}
       </section>
 
       <section className="surface">
@@ -242,14 +225,6 @@ export function PublicPgDetailsPage() {
         <h2>Location</h2>
         <p className="muted-copy">{pg.area}, {pg.city}, {pg.state}</p>
       </section>
-
-      {showBookingModal && (
-        <BookingModal
-          pg={pg}
-          onClose={() => setShowBookingModal(false)}
-          onSuccess={handleBookingSuccess}
-        />
-      )}
     </div>
   );
 }

@@ -155,8 +155,7 @@ public class AdminPgVerificationService {
     public AdminPropertyDetailsResponse requestChanges(Long propertyId, Long adminUserId, String remarks, String ipAddress) {
         String cleanedRemarks = requireRemarks(remarks);
         PgProperty property = getProperty(propertyId);
-        if (property.getVerificationStatus() != PropertyVerificationStatus.PENDING
-                && property.getVerificationStatus() != PropertyVerificationStatus.UNDER_REVIEW) {
+        if (property.getVerificationStatus() != PropertyVerificationStatus.UNDER_REVIEW) {
             throw new BusinessRuleException("Changes cannot be requested from current status", "INVALID_VERIFICATION_TRANSITION");
         }
         User admin = userService.getUser(adminUserId);

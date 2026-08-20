@@ -14,16 +14,20 @@ import com.staysure.property.dto.PaginationResponse;
 import com.staysure.property.dto.admin.AdminPropertyDetailsResponse;
 import com.staysure.property.dto.discovery.PublicPgCardResponse;
 import com.staysure.property.dto.discovery.PublicPgSearchRequest;
+import com.staysure.property.dto.discovery.PublicPgDetailsResponse;
 import com.staysure.property.dto.verification.SubmitVerificationResponse;
+import com.staysure.property.entity.Floor;
 import com.staysure.property.entity.PgImage;
 import com.staysure.property.entity.Wishlist;
 import com.staysure.property.enums.BedStatus;
 import com.staysure.property.enums.FloorStatus;
+import com.staysure.property.enums.FurnishingType;
 import com.staysure.property.enums.GenderType;
 import com.staysure.property.enums.PropertyStatus;
 import com.staysure.property.enums.PropertyType;
 import com.staysure.property.enums.PropertyVerificationStatus;
 import com.staysure.property.enums.RoomStatus;
+import com.staysure.property.enums.SharingType;
 import com.staysure.property.mapper.PgPropertyMapper;
 import com.staysure.property.repository.AmenityRepository;
 import com.staysure.property.repository.BedRepository;
@@ -44,11 +48,13 @@ import com.staysure.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import com.staysure.property.entity.PgProperty;
+import com.staysure.property.entity.Room;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -59,6 +65,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -232,6 +239,35 @@ class Phase3ServiceTest {
     }
 
     @Test
+    void adminCanRequestChangesOnlyAfterReview() {
+        User admin = user(99L, RoleName.SUPER_ADMIN);
+        OwnerProfile owner = verifiedOwner(1L);
+        PgProperty pending = property(10L, owner, PropertyVerificationStatus.PENDING, PropertyStatus.ACTIVE);
+        when(pgPropertyRepository.findById(10L)).thenReturn(Optional.of(pending));
+
+        assertThatThrownBy(() -> adminService.requestChanges(10L, 99L, "update photos", "ip"))
+                .isInstanceOf(BusinessRuleException.class)
+                .satisfies(error -> assertThat(((BusinessRuleException) error).getErrorCode()).isEqualTo("INVALID_VERIFICATION_TRANSITION"));
+        verify(userService, never()).getUser(99L);
+
+        PgProperty underReview = property(11L, owner, PropertyVerificationStatus.UNDER_REVIEW, PropertyStatus.ACTIVE);
+        when(pgPropertyRepository.findById(11L)).thenReturn(Optional.of(underReview));
+        when(userService.getUser(99L)).thenReturn(admin);
+        when(pgPropertyRepository.save(underReview)).thenReturn(underReview);
+        when(ownerMapper.toResponse(owner)).thenReturn(null);
+        when(pgImageRepository.findAllByPropertyOrderBySortOrderAscCreatedAtAsc(underReview)).thenReturn(List.of());
+        when(floorRepository.findAllByPropertyAndStatusNotOrderByFloorNumberAsc(underReview, FloorStatus.ARCHIVED)).thenReturn(List.of());
+        when(verificationHistoryRepository.findAllByPropertyOrderByCreatedAtDesc(underReview)).thenReturn(List.of());
+
+        adminService.requestChanges(11L, 99L, "update photos", "ip");
+
+        assertThat(underReview.getVerificationStatus()).isEqualTo(PropertyVerificationStatus.CHANGES_REQUESTED);
+        assertThat(underReview.getVerificationRemarks()).isEqualTo("update photos");
+        verify(auditService).log(eq(admin), eq("PG_CHANGES_REQUESTED"), eq("PROPERTY"), eq("PgProperty"),
+                eq(11L), eq("PG verification changes requested"), eq(null), eq("CHANGES_REQUESTED"), eq("ip"));
+    }
+
+    @Test
     void invalidVerificationTransitionBlocked() {
         PgProperty property = property(10L, verifiedOwner(1L), PropertyVerificationStatus.REJECTED, PropertyStatus.ACTIVE);
         when(pgPropertyRepository.findById(10L)).thenReturn(Optional.of(property));
@@ -258,6 +294,32 @@ class Phase3ServiceTest {
         assertThatThrownBy(() -> discoveryService.details("pending-pg"))
                 .isInstanceOf(ApiException.class)
                 .satisfies(error -> assertThat(((ApiException) error).getErrorCode()).isEqualTo("PUBLIC_PG_NOT_FOUND"));
+
+        PgProperty archived = property(12L, verifiedOwner(1L), PropertyVerificationStatus.VERIFIED, PropertyStatus.ARCHIVED);
+        assertThat(discoveryService.isPubliclyVisible(archived)).isFalse();
+    }
+
+    @Test
+    void publicDetailsUsesActualAvailableBedStatus() {
+        PgProperty property = property(10L, verifiedOwner(1L), PropertyVerificationStatus.VERIFIED, PropertyStatus.ACTIVE);
+        Room room = room(12L, property, SharingType.DOUBLE);
+        when(pgPropertyRepository.findBySlugAndStatusAndVerificationStatus("sai-residency", PropertyStatus.ACTIVE, PropertyVerificationStatus.VERIFIED))
+                .thenReturn(Optional.of(property));
+        when(pgImageRepository.findAllByPropertyOrderBySortOrderAscCreatedAtAsc(property)).thenReturn(List.of());
+        when(roomRepository.findPublicRooms(property, RoomStatus.ACTIVE, FloorStatus.ACTIVE)).thenReturn(List.of(room));
+        when(bedRepository.countByRoomIdsAndStatus(List.of(12L), BedStatus.AVAILABLE))
+                .thenReturn(List.<Object[]>of(new Object[]{12L, 2L}));
+        when(bedRepository.countByPublicPropertyAndStatusNot(property, BedStatus.ARCHIVED, RoomStatus.ACTIVE, FloorStatus.ACTIVE)).thenReturn(3L);
+        when(bedRepository.countByPublicPropertyAndStatus(property, BedStatus.AVAILABLE, RoomStatus.ACTIVE, FloorStatus.ACTIVE)).thenReturn(2L);
+
+        PublicPgDetailsResponse response = discoveryService.details("sai-residency");
+
+        assertThat(response.availableBedCount()).isEqualTo(2L);
+        assertThat(response.totalBedCount()).isEqualTo(3L);
+        assertThat(response.availableRooms()).hasSize(1);
+        assertThat(response.availableRooms().get(0).sharingType()).isEqualTo(SharingType.DOUBLE);
+        assertThat(response.availableRooms().get(0).availableBeds()).isEqualTo(2L);
+        verify(bedRepository).countByRoomIdsAndStatus(List.of(12L), BedStatus.AVAILABLE);
     }
 
     @Test
@@ -287,6 +349,27 @@ class Phase3ServiceTest {
     }
 
     @Test
+    void publicSearchUsesSafePaginationAndSort() {
+        when(pgPropertyRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), org.springframework.data.domain.PageRequest.of(1, 2), 5));
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+
+        PaginationResponse<PublicPgCardResponse> response = discoveryService.search(new PublicPgSearchRequest(
+                null, " Pune ", " Hinjawadi ", BigDecimal.ZERO, BigDecimal.valueOf(12000), GenderType.COED,
+                PropertyType.PG, SharingType.DOUBLE, true, List.of(1L, 3L), true, "price_low_to_high"
+        ), 1, 2);
+
+        verify(pgPropertyRepository).findAll(any(Specification.class), pageableCaptor.capture());
+        Pageable pageable = pageableCaptor.getValue();
+        assertThat(pageable.getPageNumber()).isEqualTo(1);
+        assertThat(pageable.getPageSize()).isEqualTo(2);
+        assertThat(pageable.getSort().getOrderFor("startingRent")).isNotNull();
+        assertThat(pageable.getSort().getOrderFor("startingRent").isAscending()).isTrue();
+        assertThat(response.page()).isEqualTo(1);
+        assertThat(response.totalElements()).isEqualTo(5);
+    }
+
+    @Test
     void wishlistAddWorksAndDuplicateBlocked() {
         User user = user(1L, RoleName.USER);
         PgProperty property = property(10L, verifiedOwner(2L), PropertyVerificationStatus.VERIFIED, PropertyStatus.ACTIVE);
@@ -309,6 +392,32 @@ class Phase3ServiceTest {
         assertThatThrownBy(() -> wishlistService.add(1L, 10L, "ip"))
                 .isInstanceOf(DuplicateResourceException.class)
                 .satisfies(error -> assertThat(((DuplicateResourceException) error).getErrorCode()).isEqualTo("WISHLIST_ALREADY_EXISTS"));
+    }
+
+    @Test
+    void wishlistRejectsNonPublicPgAndRemoveIsScopedToCurrentUser() {
+        User user = user(1L, RoleName.USER);
+        PgProperty pending = property(10L, verifiedOwner(2L), PropertyVerificationStatus.PENDING, PropertyStatus.ACTIVE);
+        when(userService.getUser(1L)).thenReturn(user);
+        when(pgPropertyRepository.findById(10L)).thenReturn(Optional.of(pending));
+
+        assertThatThrownBy(() -> wishlistService.add(1L, 10L, "ip"))
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getErrorCode()).isEqualTo("PUBLIC_PG_NOT_FOUND"));
+        verify(wishlistRepository, never()).save(any(Wishlist.class));
+
+        PgProperty publicProperty = property(11L, verifiedOwner(2L), PropertyVerificationStatus.VERIFIED, PropertyStatus.ACTIVE);
+        Wishlist wishlist = new Wishlist();
+        wishlist.setId(51L);
+        wishlist.setUser(user);
+        wishlist.setProperty(publicProperty);
+        when(pgPropertyRepository.findById(11L)).thenReturn(Optional.of(publicProperty));
+        when(wishlistRepository.findByUserAndProperty(user, publicProperty)).thenReturn(Optional.of(wishlist));
+
+        wishlistService.remove(1L, 11L, "ip");
+
+        verify(wishlistRepository).findByUserAndProperty(user, publicProperty);
+        verify(wishlistRepository).delete(wishlist);
     }
 
     private void mockVerifiedOwner(OwnerProfile owner) {
@@ -371,5 +480,27 @@ class Phase3ServiceTest {
         image.setCoverImage(cover);
         image.setSortOrder(0);
         return image;
+    }
+
+    private Room room(Long id, PgProperty property, SharingType sharingType) {
+        Floor floor = new Floor();
+        floor.setId(7L);
+        floor.setProperty(property);
+        floor.setName("Floor 1");
+        floor.setFloorNumber(1);
+        floor.setStatus(FloorStatus.ACTIVE);
+        Room room = new Room();
+        room.setId(id);
+        room.setFloor(floor);
+        room.setRoomNumber("101");
+        room.setSharingType(sharingType);
+        room.setCapacity(2);
+        room.setMonthlyRent(BigDecimal.valueOf(8000));
+        room.setSecurityDeposit(BigDecimal.valueOf(8000));
+        room.setAcAvailable(true);
+        room.setAttachedBathroom(true);
+        room.setFurnishingType(FurnishingType.FULLY_FURNISHED);
+        room.setStatus(RoomStatus.ACTIVE);
+        return room;
     }
 }
