@@ -3,6 +3,7 @@ package com.staysure.owner.service;
 import com.staysure.audit.service.AuditService;
 import com.staysure.common.enums.OwnerVerificationStatus;
 import com.staysure.common.enums.RoleName;
+import com.staysure.common.exception.BusinessRuleException;
 import com.staysure.common.exception.ResourceNotFoundException;
 import com.staysure.owner.dto.OwnerDetailResponse;
 import com.staysure.owner.dto.OwnerDocumentResponse;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class AdminOwnerService {
@@ -78,19 +80,23 @@ public class AdminOwnerService {
 
     @Transactional
     public OwnerProfileResponse verify(Long ownerId, Long adminUserId, String remarks, String ipAddress) {
+        if (ownerId == null || adminUserId == null) {
+            throw new BusinessRuleException("Invalid request parameters", "INVALID_REQUEST");
+        }
         OwnerProfile owner = findOwner(ownerId);
         User admin = userService.getUser(adminUserId);
         owner.setVerificationStatus(OwnerVerificationStatus.VERIFIED);
         owner.setVerificationRemarks(blankToNull(remarks));
         owner.setVerifiedAt(LocalDateTime.now());
         owner.setVerifiedBy(admin);
-        boolean assigned = roleService.assignRoleIfMissing(owner.getUser(), RoleName.PG_OWNER);
-        userRepository.save(owner.getUser());
+        User ownerUser = Objects.requireNonNull(owner.getUser(), "owner user must not be null");
+        boolean assigned = roleService.assignRoleIfMissing(ownerUser, RoleName.PG_OWNER);
+        userRepository.save(ownerUser);
         OwnerProfile saved = ownerProfileRepository.save(owner);
         auditService.log(admin, "OWNER_VERIFIED", "OWNER", "OwnerProfile", saved.getId(),
                 "Owner application verified", null, "VERIFIED", ipAddress);
         if (assigned) {
-            auditService.log(admin, "ROLE_ASSIGNED", "ROLE", "User", owner.getUser().getId(),
+            auditService.log(admin, "ROLE_ASSIGNED", "ROLE", "User", ownerUser.getId(),
                     "PG_OWNER role assigned after owner verification", null, "PG_OWNER", ipAddress);
         }
         return ownerMapper.toResponse(saved);
@@ -98,6 +104,9 @@ public class AdminOwnerService {
 
     @Transactional
     public OwnerProfileResponse reject(Long ownerId, Long adminUserId, String reason, String ipAddress) {
+        if (ownerId == null || adminUserId == null) {
+            throw new BusinessRuleException("Invalid request parameters", "INVALID_REQUEST");
+        }
         OwnerProfile owner = findOwner(ownerId);
         User admin = userService.getUser(adminUserId);
         owner.setVerificationStatus(OwnerVerificationStatus.REJECTED);
@@ -112,6 +121,9 @@ public class AdminOwnerService {
 
     @Transactional
     public OwnerProfileResponse suspend(Long ownerId, Long adminUserId, String reason, String ipAddress) {
+        if (ownerId == null || adminUserId == null) {
+            throw new BusinessRuleException("Invalid request parameters", "INVALID_REQUEST");
+        }
         OwnerProfile owner = findOwner(ownerId);
         User admin = userService.getUser(adminUserId);
         owner.setVerificationStatus(OwnerVerificationStatus.SUSPENDED);
@@ -123,7 +135,8 @@ public class AdminOwnerService {
     }
 
     private OwnerProfile findOwner(Long ownerId) {
-        return ownerProfileRepository.findById(ownerId)
+        Long id = Objects.requireNonNull(ownerId, "ownerId must not be null");
+        return ownerProfileRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Owner application not found"));
     }
 

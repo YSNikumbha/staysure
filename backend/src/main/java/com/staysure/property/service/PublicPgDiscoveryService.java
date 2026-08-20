@@ -5,7 +5,6 @@ import com.staysure.common.exception.BusinessRuleException;
 import com.staysure.property.dto.AmenityResponse;
 import com.staysure.property.dto.PaginationResponse;
 import com.staysure.property.dto.PgImageResponse;
-import com.staysure.property.dto.PropertyRuleResponse;
 import com.staysure.property.dto.discovery.PublicOwnerSummaryResponse;
 import com.staysure.property.dto.discovery.PublicPgCardResponse;
 import com.staysure.property.dto.discovery.PublicPgDetailsResponse;
@@ -13,7 +12,6 @@ import com.staysure.property.dto.discovery.PublicPgSearchRequest;
 import com.staysure.property.dto.discovery.PublicRoomAvailabilityResponse;
 import com.staysure.property.entity.Amenity;
 import com.staysure.property.entity.Bed;
-import com.staysure.property.entity.Floor;
 import com.staysure.property.entity.PgImage;
 import com.staysure.property.entity.PgProperty;
 import com.staysure.property.entity.PropertyRule;
@@ -51,6 +49,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -87,7 +86,8 @@ public class PublicPgDiscoveryService {
     public PaginationResponse<PublicPgCardResponse> search(PublicPgSearchRequest request, int page, int size) {
         validateRentRange(request.minRent(), request.maxRent());
         Pageable pageable = pageable(page, size, request.sort());
-        Page<PgProperty> properties = pgPropertyRepository.findAll(publicSpec(request), pageable);
+        Page<PgProperty> properties = pgPropertyRepository.findAll(publicSpec(request),
+                Objects.requireNonNull(pageable, "pageable must not be null"));
         List<PublicPgCardResponse> cards = cardsForProperties(properties.getContent());
         return PaginationResponse.from(properties, cards);
     }
@@ -99,7 +99,7 @@ public class PublicPgDiscoveryService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PG not found", "PUBLIC_PG_NOT_FOUND"));
         PropertyRule rule = propertyRuleRepository.findByProperty(property).orElse(null);
         List<AmenityResponse> amenities = property.getAmenities().stream()
-                .sorted(Comparator.comparing(Amenity::getName))
+                .sorted((left, right) -> compareNullable(left.getName(), right.getName()))
                 .map(mapper::toAmenityResponse)
                 .toList();
         List<PgImageResponse> gallery = pgImageRepository.findAllByPropertyOrderBySortOrderAscCreatedAtAsc(property)
@@ -107,7 +107,9 @@ public class PublicPgDiscoveryService {
                 .map(mapper::toImageResponse)
                 .toList();
         List<Room> rooms = roomRepository.findPublicRooms(property, RoomStatus.ACTIVE, FloorStatus.ACTIVE);
-        List<Long> roomIds = rooms.stream().map(Room::getId).toList();
+        List<Long> roomIds = rooms.stream()
+                .map(room -> Objects.requireNonNull(room.getId(), "room id must not be null"))
+                .toList();
         Map<Long, Long> availableByRoomId = roomIds.isEmpty()
                 ? Map.of()
                 : countById(bedRepository.countByRoomIdsAndStatus(roomIds, BedStatus.AVAILABLE));
@@ -160,7 +162,9 @@ public class PublicPgDiscoveryService {
         if (properties.isEmpty()) {
             return List.of();
         }
-        List<Long> propertyIds = properties.stream().map(PgProperty::getId).toList();
+        List<Long> propertyIds = properties.stream()
+                .map(property -> Objects.requireNonNull(property.getId(), "property id must not be null"))
+                .toList();
         Map<Long, Long> totalBeds = countById(bedRepository.countByPublicPropertyIdsAndStatusNot(
                 propertyIds, BedStatus.ARCHIVED, RoomStatus.ACTIVE, FloorStatus.ACTIVE));
         Map<Long, Long> availableBeds = countById(bedRepository.countByPublicPropertyIdsAndStatus(
@@ -232,6 +236,9 @@ public class PublicPgDiscoveryService {
 
     private Specification<PgProperty> publicSpec(PublicPgSearchRequest request) {
         return (root, query, cb) -> {
+            if (query == null || cb == null) {
+                throw new IllegalArgumentException("Query and CriteriaBuilder cannot be null");
+            }
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), PropertyStatus.ACTIVE));
             predicates.add(cb.equal(root.get("verificationStatus"), PropertyVerificationStatus.VERIFIED));
@@ -298,7 +305,7 @@ public class PublicPgDiscoveryService {
                 );
                 predicates.add(cb.exists(amenitySubquery));
             }
-            if (!Long.class.equals(query.getResultType()) && "availability".equalsIgnoreCase(nullToBlank(request.sort()))) {
+            if (query != null && !Long.class.equals(query.getResultType()) && "availability".equalsIgnoreCase(nullToBlank(request.sort()))) {
                 Subquery<Long> countSubquery = query.subquery(Long.class);
                 Root<Bed> bed = countSubquery.from(Bed.class);
                 countSubquery.select(cb.count(bed)).where(
@@ -362,5 +369,9 @@ public class PublicPgDiscoveryService {
 
     private String nullToBlank(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private int compareNullable(String left, String right) {
+        return Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER).compare(left, right);
     }
 }

@@ -17,6 +17,8 @@ import com.staysure.user.service.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 @Service
 public class OwnerService {
 
@@ -70,7 +72,7 @@ public class OwnerService {
     public OwnerProfileResponse updateMyProfile(Long userId, OwnerApplicationRequest request, String ipAddress) {
         OwnerProfile owner = getCurrentOwner(userId);
         applyRequest(owner, request);
-        OwnerProfile saved = ownerProfileRepository.save(owner);
+        OwnerProfile saved = ownerProfileRepository.save(Objects.requireNonNull(owner, "owner must not be null"));
         auditService.log(owner.getUser(), "OWNER_APPLICATION_UPDATED", "OWNER", "OwnerProfile", saved.getId(),
                 "Owner application updated", null, null, ipAddress);
         return ownerMapper.toResponse(saved);

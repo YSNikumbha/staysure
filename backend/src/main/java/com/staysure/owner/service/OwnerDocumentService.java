@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class OwnerDocumentService {
@@ -69,7 +70,7 @@ public class OwnerDocumentService {
         OwnerProfile owner = ownerService.getCurrentOwner(userId);
         OwnerDocument document = ownerDocumentRepository.findByIdAndOwner(documentId, owner)
                 .orElseThrow(() -> new ResourceNotFoundException("Owner document not found"));
-        ownerDocumentRepository.delete(document);
+        ownerDocumentRepository.delete(Objects.requireNonNull(document, "owner document must not be null"));
         fileStorageService.deleteByPublicUrl(document.getDocumentUrl());
     }
 

@@ -69,8 +69,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 public class PgPropertyService {
@@ -233,7 +231,7 @@ public class PgPropertyService {
             return created;
         });
         applyRuleRequest(rule, request.rules(), saved.getNoticePeriodDays());
-        propertyRuleRepository.save(rule);
+        propertyRuleRepository.save(Objects.requireNonNull(rule, "property rule must not be null"));
         auditService.log(owner.getUser(), "PG_UPDATED", "PROPERTY", "PgProperty", saved.getId(),
                 "PG property updated", null, saved.getName(), ipAddress);
         if (requiresReverification) {
@@ -502,7 +500,7 @@ public class PgPropertyService {
         auditService.log(owner.getUser(), "AMENITIES_UPDATED", "PROPERTY", "PgProperty", property.getId(),
                 "Property amenities updated", null, String.valueOf(amenityIds.size()), ipAddress);
         return amenities.stream()
-                .sorted(Comparator.comparing(Amenity::getName))
+                .sorted((left, right) -> compareNullable(left.getName(), right.getName()))
                 .map(mapper::toAmenityResponse)
                 .toList();
     }
@@ -553,9 +551,10 @@ public class PgPropertyService {
     public List<PgImageResponse> reorderImages(Long userId, Long pgId, List<PgImageOrderRequest> request, String ipAddress) {
         OwnerProfile owner = requireVerifiedOwner(userId);
         PgProperty property = getOwnedProperty(owner, pgId);
-        Map<Long, PgImage> images = pgImageRepository.findAllByPropertyOrderBySortOrderAscCreatedAtAsc(property)
-                .stream()
-                .collect(Collectors.toMap(PgImage::getId, Function.identity()));
+        Map<Long, PgImage> images = new java.util.HashMap<>();
+        for (PgImage image : pgImageRepository.findAllByPropertyOrderBySortOrderAscCreatedAtAsc(property)) {
+            images.put(Objects.requireNonNull(image.getId(), "image id must not be null"), image);
+        }
         for (PgImageOrderRequest item : request) {
             PgImage image = images.get(item.imageId());
             if (image == null) {
@@ -577,7 +576,7 @@ public class PgPropertyService {
         OwnerProfile owner = requireVerifiedOwner(userId);
         PgProperty property = getOwnedProperty(owner, pgId);
         PgImage image = getImageInProperty(property, imageId);
-        pgImageRepository.delete(image);
+        pgImageRepository.delete(Objects.requireNonNull(image, "image must not be null"));
         fileStorageService.deleteByPublicUrl(image.getImageUrl());
         auditService.log(owner.getUser(), "PG_IMAGE_DELETED", "PROPERTY", "PgImage", image.getId(),
                 "PG image deleted", null, null, ipAddress);
@@ -608,7 +607,8 @@ public class PgPropertyService {
     }
 
     private PgProperty getOwnedProperty(OwnerProfile owner, Long pgId) {
-        PgProperty property = pgPropertyRepository.findById(pgId)
+        Long id = Objects.requireNonNull(pgId, "pgId must not be null");
+        PgProperty property = pgPropertyRepository.findById(id)
                 .orElseThrow(() -> notFound("PG not found", "PG_NOT_FOUND"));
         if (!property.getOwner().getId().equals(owner.getId())) {
             throw new ApiException(HttpStatus.FORBIDDEN, "PG access denied", "PG_ACCESS_DENIED");
@@ -617,7 +617,8 @@ public class PgPropertyService {
     }
 
     private Floor getFloorInProperty(PgProperty property, Long floorId) {
-        Floor floor = floorRepository.findById(floorId)
+        Long id = Objects.requireNonNull(floorId, "floorId must not be null");
+        Floor floor = floorRepository.findById(id)
                 .orElseThrow(() -> notFound("Floor not found", "FLOOR_NOT_FOUND"));
         if (!floor.getProperty().getId().equals(property.getId())) {
             throw notFound("Floor not found", "FLOOR_NOT_FOUND");
@@ -626,7 +627,8 @@ public class PgPropertyService {
     }
 
     private Room getRoomInFloor(Floor floor, Long roomId) {
-        Room room = roomRepository.findById(roomId)
+        Long id = Objects.requireNonNull(roomId, "roomId must not be null");
+        Room room = roomRepository.findById(id)
                 .orElseThrow(() -> notFound("Room not found", "ROOM_NOT_FOUND"));
         if (!room.getFloor().getId().equals(floor.getId())) {
             throw notFound("Room not found", "ROOM_NOT_FOUND");
@@ -635,7 +637,8 @@ public class PgPropertyService {
     }
 
     private Bed getBedInRoom(Room room, Long bedId) {
-        Bed bed = bedRepository.findById(bedId)
+        Long id = Objects.requireNonNull(bedId, "bedId must not be null");
+        Bed bed = bedRepository.findById(id)
                 .orElseThrow(() -> notFound("Bed not found", "BED_NOT_FOUND"));
         if (!bed.getRoom().getId().equals(room.getId())) {
             throw notFound("Bed not found", "BED_NOT_FOUND");
@@ -644,7 +647,8 @@ public class PgPropertyService {
     }
 
     private PgImage getImageInProperty(PgProperty property, Long imageId) {
-        PgImage image = pgImageRepository.findById(imageId)
+        Long id = Objects.requireNonNull(imageId, "imageId must not be null");
+        PgImage image = pgImageRepository.findById(id)
                 .orElseThrow(() -> notFound("Image not found", "PG_IMAGE_NOT_FOUND"));
         if (!image.getProperty().getId().equals(property.getId())) {
             throw notFound("Image not found", "PG_IMAGE_NOT_FOUND");
@@ -664,7 +668,7 @@ public class PgPropertyService {
     private PropertyDetailsResponse buildDetails(PgProperty property) {
         PropertyRule rule = propertyRuleRepository.findByProperty(property).orElse(null);
         List<AmenityResponse> amenities = property.getAmenities().stream()
-                .sorted(Comparator.comparing(Amenity::getName))
+                .sorted((left, right) -> compareNullable(left.getName(), right.getName()))
                 .map(mapper::toAmenityResponse)
                 .toList();
         List<PgImageResponse> images = pgImageRepository.findAllByPropertyOrderBySortOrderAscCreatedAtAsc(property)
@@ -693,10 +697,10 @@ public class PgPropertyService {
         PropertyInventoryCountsResponse counts = counts(property);
         String coverImageUrl = pgImageRepository.findAllByPropertyOrderBySortOrderAscCreatedAtAsc(property)
                 .stream()
-                .filter(PgImage::isCoverImage)
+                .filter(image -> image.isCoverImage())
                 .findFirst()
                 .or(() -> pgImageRepository.findAllByPropertyOrderBySortOrderAscCreatedAtAsc(property).stream().findFirst())
-                .map(PgImage::getImageUrl)
+                .map(image -> image.getImageUrl())
                 .orElse(null);
         return new PropertySummaryResponse(
                 property.getId(),
@@ -745,7 +749,7 @@ public class PgPropertyService {
         List<PgImage> images = pgImageRepository.findAllByPropertyOrderBySortOrderAscCreatedAtAsc(property);
         if (images.isEmpty()) {
             missingItems.add("At least one image");
-        } else if (images.stream().noneMatch(PgImage::isCoverImage)) {
+        } else if (images.stream().noneMatch(image -> image.isCoverImage())) {
             missingItems.add("Cover image");
         }
         return missingItems;
@@ -913,6 +917,10 @@ public class PgPropertyService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private int compareNullable(String left, String right) {
+        return Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER).compare(left, right);
     }
 
     private record PropertySnapshot(

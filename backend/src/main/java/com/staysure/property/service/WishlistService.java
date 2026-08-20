@@ -3,6 +3,7 @@ package com.staysure.property.service;
 import com.staysure.audit.service.AuditService;
 import com.staysure.common.exception.ApiException;
 import com.staysure.common.exception.DuplicateResourceException;
+import com.staysure.property.dto.discovery.PublicPgCardResponse;
 import com.staysure.property.dto.wishlist.WishlistResponse;
 import com.staysure.property.entity.PgProperty;
 import com.staysure.property.entity.Wishlist;
@@ -16,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 @Service
 public class WishlistService {
@@ -44,12 +45,13 @@ public class WishlistService {
         User user = userService.getUser(userId);
         List<Wishlist> wishlists = wishlistRepository.findAllByUserOrderByCreatedAtDesc(user);
         List<PgProperty> properties = wishlists.stream()
-                .map(Wishlist::getProperty)
-                .filter(publicPgDiscoveryService::isPubliclyVisible)
+                .map(wishlist -> wishlist.getProperty())
+                .filter(property -> publicPgDiscoveryService.isPubliclyVisible(property))
                 .toList();
-        Map<Long, com.staysure.property.dto.discovery.PublicPgCardResponse> cards = publicPgDiscoveryService.cardsForProperties(properties)
-                .stream()
-                .collect(Collectors.toMap(com.staysure.property.dto.discovery.PublicPgCardResponse::id, card -> card));
+        Map<Long, PublicPgCardResponse> cards = new java.util.HashMap<>();
+        for (PublicPgCardResponse card : publicPgDiscoveryService.cardsForProperties(properties)) {
+            cards.put(card.id(), card);
+        }
         return wishlists.stream()
                 .filter(wishlist -> cards.containsKey(wishlist.getProperty().getId()))
                 .map(wishlist -> new WishlistResponse(wishlist.getId(), cards.get(wishlist.getProperty().getId()), wishlist.getCreatedAt()))
@@ -81,13 +83,14 @@ public class WishlistService {
         PgProperty property = publicProperty(propertyId);
         Wishlist wishlist = wishlistRepository.findByUserAndProperty(user, property)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wishlist item not found", "WISHLIST_NOT_FOUND"));
-        wishlistRepository.delete(wishlist);
+        wishlistRepository.delete(Objects.requireNonNull(wishlist, "wishlist must not be null"));
         auditService.log(user, "WISHLIST_REMOVED", "WISHLIST", "PgProperty", property.getId(),
                 "PG removed from wishlist", null, null, ipAddress);
     }
 
     private PgProperty publicProperty(Long propertyId) {
-        PgProperty property = pgPropertyRepository.findById(propertyId)
+        Long id = Objects.requireNonNull(propertyId, "propertyId must not be null");
+        PgProperty property = pgPropertyRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PG not found", "PUBLIC_PG_NOT_FOUND"));
         if (!publicPgDiscoveryService.isPubliclyVisible(property)) {
             throw new ApiException(HttpStatus.NOT_FOUND, "PG not found", "PUBLIC_PG_NOT_FOUND");

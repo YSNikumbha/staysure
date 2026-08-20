@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -81,8 +80,8 @@ public class PublicPgController {
         if (value == null || value.isBlank()) {
             return List.of();
         }
-        return Arrays.stream(value.split(","))
-                .map(String::trim)
+        return java.util.Arrays.stream(value.split(","))
+                .map(item -> item.trim())
                 .filter(item -> !item.isBlank())
                 .map(this::parseAmenityId)
                 .toList();

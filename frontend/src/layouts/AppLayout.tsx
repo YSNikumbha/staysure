@@ -28,6 +28,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           {isAuthenticated ? (
             <>
               <NavLink to="/profile">Profile</NavLink>
+              <NavLink to="/bookings">My Bookings</NavLink>
               <NavLink to="/wishlist">Wishlist</NavLink>
               {!roles.includes('PG_OWNER') ? <NavLink to="/owner/apply">Owner Application</NavLink> : null}
               {roles.includes('PG_OWNER') ? <NavLink to="/owner/dashboard">Owner</NavLink> : null}

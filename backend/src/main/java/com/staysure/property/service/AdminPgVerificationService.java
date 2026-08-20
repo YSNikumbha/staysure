@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class AdminPgVerificationService {
@@ -204,7 +205,8 @@ public class AdminPgVerificationService {
     }
 
     private PgProperty getProperty(Long propertyId) {
-        return pgPropertyRepository.findById(propertyId)
+        Long id = Objects.requireNonNull(propertyId, "propertyId must not be null");
+        return pgPropertyRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PG not found", "PG_NOT_FOUND"));
     }
 

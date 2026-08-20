@@ -1,7 +1,6 @@
 package com.staysure.user.service;
 
 import com.staysure.audit.service.AuditService;
-import com.staysure.auth.dto.AuthResponse;
 import com.staysure.common.exception.ApiException;
 import com.staysure.common.exception.BusinessRuleException;
 import com.staysure.common.exception.DuplicateResourceException;
@@ -18,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class UserService {
@@ -39,7 +39,8 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public User getUser(Long userId) {
-        return userRepository.findById(userId)
+        Long id = Objects.requireNonNull(userId, "userId must not be null");
+        return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 

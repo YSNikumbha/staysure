@@ -21,6 +21,11 @@ import { FindPgPage } from '../pages/FindPgPage';
 import { HomePage } from '../pages/HomePage';
 import { PublicPgDetailsPage } from '../pages/PublicPgDetailsPage';
 import { WishlistPage } from '../pages/WishlistPage';
+import BookingsPage from '../pages/BookingsPage';
+import BookingDetailPage from '../pages/BookingDetailPage';
+import BookingKycPage from '../pages/BookingKycPage';
+import OwnerBookingsPage from '../pages/OwnerBookingsPage';
+import OwnerBookingDetailPage from '../pages/OwnerBookingDetailPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { RoleProtectedRoute } from './RoleProtectedRoute';
 
@@ -177,6 +182,46 @@ export function AppRoutes() {
           element={
             <RoleProtectedRoute role="SUPER_ADMIN">
               <AdminOwnerDetailPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/bookings"
+          element={
+            <ProtectedRoute>
+              <BookingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bookings/:id"
+          element={
+            <ProtectedRoute>
+              <BookingDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bookings/:id/kyc"
+          element={
+            <ProtectedRoute>
+              <BookingKycPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/owner/bookings"
+          element={
+            <RoleProtectedRoute role="PG_OWNER">
+              <OwnerBookingsPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/owner/bookings/:id"
+          element={
+            <RoleProtectedRoute role="PG_OWNER">
+              <OwnerBookingDetailPage />
             </RoleProtectedRoute>
           }
         />

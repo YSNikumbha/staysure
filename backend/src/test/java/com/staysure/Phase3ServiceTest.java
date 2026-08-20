@@ -11,13 +11,11 @@ import com.staysure.owner.mapper.OwnerMapper;
 import com.staysure.owner.repository.OwnerProfileRepository;
 import com.staysure.owner.service.FileStorageService;
 import com.staysure.property.dto.PaginationResponse;
-import com.staysure.property.dto.PgPropertyRequest;
 import com.staysure.property.dto.admin.AdminPropertyDetailsResponse;
 import com.staysure.property.dto.discovery.PublicPgCardResponse;
 import com.staysure.property.dto.discovery.PublicPgSearchRequest;
 import com.staysure.property.dto.verification.SubmitVerificationResponse;
 import com.staysure.property.entity.PgImage;
-import com.staysure.property.entity.PgProperty;
 import com.staysure.property.entity.Wishlist;
 import com.staysure.property.enums.BedStatus;
 import com.staysure.property.enums.FloorStatus;
@@ -50,6 +48,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import com.staysure.property.entity.PgProperty;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -64,6 +63,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings({"null", "unchecked"})
 class Phase3ServiceTest {
 
     @Mock private OwnerProfileRepository ownerProfileRepository;
@@ -233,7 +233,6 @@ class Phase3ServiceTest {
 
     @Test
     void invalidVerificationTransitionBlocked() {
-        User admin = user(99L, RoleName.SUPER_ADMIN);
         PgProperty property = property(10L, verifiedOwner(1L), PropertyVerificationStatus.REJECTED, PropertyStatus.ACTIVE);
         when(pgPropertyRepository.findById(10L)).thenReturn(Optional.of(property));
 

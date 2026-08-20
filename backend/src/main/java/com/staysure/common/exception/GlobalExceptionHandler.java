@@ -19,12 +19,13 @@ import org.springframework.web.multipart.MultipartException;
 
 import java.util.stream.Collectors;
 
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse<?>> handleApiException(ApiException ex) {
-        return ResponseEntity.status(ex.getStatus()).body(ApiResponse.failure(ex.getMessage(), ex.getErrorCode(), ex.getData()));
+        return ResponseEntity.status(ex.getStatus().value()).body(ApiResponse.failure(ex.getMessage(), ex.getErrorCode(), ex.getData()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -42,37 +43,37 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadCredentials() {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value())
                 .body(ApiResponse.failure("Invalid email or password", "INVALID_CREDENTIALS"));
     }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiResponse<Void>> handleAuthentication(AuthenticationException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value())
                 .body(ApiResponse.failure("Authentication required", "UNAUTHORIZED"));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied() {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        return ResponseEntity.status(HttpStatus.FORBIDDEN.value())
                 .body(ApiResponse.failure("Access denied", "FORBIDDEN"));
     }
 
     @ExceptionHandler(ExpiredJwtException.class)
     public ResponseEntity<ApiResponse<Void>> handleExpiredJwt() {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value())
                 .body(ApiResponse.failure("Token has expired", "TOKEN_EXPIRED"));
     }
 
     @ExceptionHandler(JwtException.class)
     public ResponseEntity<ApiResponse<Void>> handleJwt() {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value())
                 .body(ApiResponse.failure("Invalid token", "INVALID_TOKEN"));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrity() {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
+        return ResponseEntity.status(HttpStatus.CONFLICT.value())
                 .body(ApiResponse.failure("Duplicate or invalid data", "DATA_INTEGRITY_VIOLATION"));
     }
 
@@ -83,7 +84,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .body(ApiResponse.failure("Unexpected server error", "INTERNAL_SERVER_ERROR"));
     }
 

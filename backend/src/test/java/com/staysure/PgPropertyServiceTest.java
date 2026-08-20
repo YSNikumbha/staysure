@@ -15,8 +15,8 @@ import com.staysure.property.dto.PgPropertyRequest;
 import com.staysure.property.dto.PropertyAmenityUpdateRequest;
 import com.staysure.property.dto.PropertyDetailsResponse;
 import com.staysure.property.dto.RoomRequest;
+import com.staysure.property.dto.AmenityResponse;
 import com.staysure.property.entity.Amenity;
-import com.staysure.property.entity.Bed;
 import com.staysure.property.entity.Floor;
 import com.staysure.property.entity.PgImage;
 import com.staysure.property.entity.PgProperty;
@@ -64,6 +64,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 class PgPropertyServiceTest {
 
     @Mock private OwnerProfileRepository ownerProfileRepository;
@@ -300,7 +301,7 @@ class PgPropertyServiceTest {
         when(pgPropertyRepository.findById(10L)).thenReturn(Optional.of(property));
         when(amenityRepository.findAllByIdInAndActiveTrue(Set.of(1L, 2L))).thenReturn(List.of(wifi, cctv));
 
-        List<?> response = service.updateAmenities(1L, 10L, new PropertyAmenityUpdateRequest(Set.of(1L, 2L)), "ip");
+        List<AmenityResponse> response = service.updateAmenities(1L, 10L, new PropertyAmenityUpdateRequest(Set.of(1L, 2L)), "ip");
 
         assertThat(response).hasSize(2);
         assertThat(property.getAmenities()).containsExactlyInAnyOrder(wifi, cctv);

@@ -19,6 +19,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) {
+        if (username == null || username.isBlank()) {
+            throw new UsernameNotFoundException("Username is required");
+        }
         return userRepository.findByEmail(username.trim().toLowerCase())
                 .map(UserPrincipal::from)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
@@ -26,6 +29,9 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Transactional(readOnly = true)
     public UserDetails loadUserById(Long id) {
+        if (id == null) {
+            throw new UsernameNotFoundException("User ID is required");
+        }
         return userRepository.findById(id)
                 .map(UserPrincipal::from)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
