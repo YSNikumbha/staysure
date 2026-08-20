@@ -21,6 +21,14 @@ import { FindPgPage } from '../pages/FindPgPage';
 import { HomePage } from '../pages/HomePage';
 import { PublicPgDetailsPage } from '../pages/PublicPgDetailsPage';
 import { WishlistPage } from '../pages/WishlistPage';
+import BookingsPage from '../pages/BookingsPage';
+import BookingDetailPage from '../pages/BookingDetailPage';
+import BookingKycPage from '../pages/BookingKycPage';
+import OwnerBookingsPage from '../pages/OwnerBookingsPage';
+import OwnerBookingDetailPage from '../pages/OwnerBookingDetailPage';
+import OwnerTenantsPage from '../pages/OwnerTenantsPage';
+import OwnerTenantDetailPage from '../pages/OwnerTenantDetailPage';
+import MyPgPage from '../pages/MyPgPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { RoleProtectedRoute } from './RoleProtectedRoute';
 
@@ -49,6 +57,38 @@ export function AppRoutes() {
           element={
             <ProtectedRoute>
               <WishlistPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bookings"
+          element={
+            <ProtectedRoute>
+              <BookingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bookings/:id"
+          element={
+            <ProtectedRoute>
+              <BookingDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bookings/:id/kyc"
+          element={
+            <ProtectedRoute>
+              <BookingKycPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-pg"
+          element={
+            <ProtectedRoute>
+              <MyPgPage />
             </ProtectedRoute>
           }
         />
@@ -121,6 +161,38 @@ export function AppRoutes() {
           element={
             <RoleProtectedRoute role="PG_OWNER">
               <OwnerPgDetailsPage focus="beds" />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/owner/bookings"
+          element={
+            <RoleProtectedRoute role="PG_OWNER">
+              <OwnerBookingsPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/owner/bookings/:id"
+          element={
+            <RoleProtectedRoute role="PG_OWNER">
+              <OwnerBookingDetailPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/owner/tenants"
+          element={
+            <RoleProtectedRoute role="PG_OWNER">
+              <OwnerTenantsPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/owner/tenants/:id"
+          element={
+            <RoleProtectedRoute role="PG_OWNER">
+              <OwnerTenantDetailPage />
             </RoleProtectedRoute>
           }
         />

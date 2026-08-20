@@ -7,5 +7,9 @@ public interface FileStorageService {
 
     StoredFile storePgImage(Long propertyId, MultipartFile file);
 
+    StoredFile storeTenantDocument(Long bookingId, MultipartFile file);
+
+    StoredFile storeRentalAgreement(Long bookingId, MultipartFile file);
+
     void deleteByPublicUrl(String publicUrl);
 }

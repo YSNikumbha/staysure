@@ -6,6 +6,7 @@ import com.staysure.property.dto.AmenityResponse;
 import com.staysure.property.dto.PaginationResponse;
 import com.staysure.property.dto.PgImageResponse;
 import com.staysure.property.dto.discovery.PublicOwnerSummaryResponse;
+import com.staysure.property.dto.discovery.PublicAvailableBedResponse;
 import com.staysure.property.dto.discovery.PublicPgCardResponse;
 import com.staysure.property.dto.discovery.PublicPgDetailsResponse;
 import com.staysure.property.dto.discovery.PublicPgSearchRequest;
@@ -113,8 +114,14 @@ public class PublicPgDiscoveryService {
         Map<Long, Long> availableByRoomId = roomIds.isEmpty()
                 ? Map.of()
                 : countById(bedRepository.countByRoomIdsAndStatus(roomIds, BedStatus.AVAILABLE));
+        Map<Long, List<PublicAvailableBedResponse>> bedsByRoomId = roomIds.isEmpty()
+                ? Map.of()
+                : bedRepository.findByRoomIdsAndStatus(roomIds, BedStatus.AVAILABLE).stream()
+                .collect(Collectors.groupingBy(bed -> bed.getRoom().getId(), LinkedHashMap::new,
+                        Collectors.mapping(this::toAvailableBed, Collectors.toList())));
         List<PublicRoomAvailabilityResponse> availableRooms = rooms.stream()
-                .map(room -> toRoomAvailability(room, availableByRoomId.getOrDefault(room.getId(), 0L)))
+                .map(room -> toRoomAvailability(room, availableByRoomId.getOrDefault(room.getId(), 0L),
+                        bedsByRoomId.getOrDefault(room.getId(), List.of())))
                 .filter(room -> room.availableBeds() > 0)
                 .toList();
         long totalBeds = bedRepository.countByPublicPropertyAndStatusNot(property, BedStatus.ARCHIVED, RoomStatus.ACTIVE, FloorStatus.ACTIVE);
@@ -206,7 +213,8 @@ public class PublicPgDiscoveryService {
         );
     }
 
-    private PublicRoomAvailabilityResponse toRoomAvailability(Room room, long availableBeds) {
+    private PublicRoomAvailabilityResponse toRoomAvailability(Room room, long availableBeds,
+                                                              List<PublicAvailableBedResponse> beds) {
         return new PublicRoomAvailabilityResponse(
                 room.getId(),
                 room.getRoomNumber(),
@@ -215,9 +223,19 @@ public class PublicPgDiscoveryService {
                 room.getSecurityDeposit(),
                 room.getCapacity(),
                 availableBeds,
+                beds,
                 room.isAcAvailable(),
                 room.isAttachedBathroom(),
                 room.getFurnishingType()
+        );
+    }
+
+    private PublicAvailableBedResponse toAvailableBed(Bed bed) {
+        return new PublicAvailableBedResponse(
+                bed.getId(),
+                bed.getBedNumber(),
+                bed.getBedLabel(),
+                bed.getStatus()
         );
     }
 

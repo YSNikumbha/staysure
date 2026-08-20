@@ -1,20 +1,17 @@
-package com.staysure.property.dto.discovery;
+package com.staysure.booking.dto;
 
 import com.staysure.property.enums.FurnishingType;
 import com.staysure.property.enums.SharingType;
 
 import java.math.BigDecimal;
-import java.util.List;
 
-public record PublicRoomAvailabilityResponse(
-        Long roomId,
+public record BookingRoomSummary(
+        Long id,
         String roomNumber,
         SharingType sharingType,
         BigDecimal monthlyRent,
         BigDecimal securityDeposit,
         Integer capacity,
-        long availableBeds,
-        List<PublicAvailableBedResponse> beds,
         boolean acAvailable,
         boolean attachedBathroom,
         FurnishingType furnishingType

@@ -260,9 +260,17 @@ export type PublicRoomAvailability = {
   securityDeposit: number;
   capacity: number;
   availableBeds: number;
+  beds: PublicAvailableBed[];
   acAvailable: boolean;
   attachedBathroom: boolean;
   furnishingType: FurnishingType;
+};
+
+export type PublicAvailableBed = {
+  id: number;
+  bedNumber: string;
+  bedLabel?: string | null;
+  status: BedStatus;
 };
 
 export type PublicPgDetails = {

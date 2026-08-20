@@ -29,42 +29,46 @@ public class LocalFileStorageService implements FileStorageService {
         validate(file, uploadProperties.allowedContentTypes(), "Document file is required",
                 "DOCUMENT_FILE_REQUIRED", "Document exceeds allowed file size", "DOCUMENT_FILE_TOO_LARGE",
                 "Unsupported document file type", "UNSUPPORTED_DOCUMENT_TYPE");
-        String originalFileName = cleanFileName(file.getOriginalFilename());
-        String extension = extensionFor(originalFileName, file.getContentType());
-        String storedFileName = UUID.randomUUID() + extension;
-        Path root = rootPath();
-        Path ownerDirectory = root.resolve("owner-documents").resolve(ownerId.toString()).normalize();
-        Path target = ownerDirectory.resolve(storedFileName).normalize();
-        if (!target.startsWith(ownerDirectory)) {
-            throw new BusinessRuleException("Invalid upload path", "INVALID_UPLOAD_PATH");
-        }
-        try {
-            Files.createDirectories(ownerDirectory);
-            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
-            String publicUrl = "/uploads/owner-documents/" + ownerId + "/" + storedFileName;
-            return new StoredFile(publicUrl, originalFileName, file.getContentType(), file.getSize());
-        } catch (IOException ex) {
-            throw new BusinessRuleException("Unable to store uploaded file", "UPLOAD_STORAGE_FAILED");
-        }
+        return store(file, "owner-documents", ownerId);
     }
 
     @Override
     public StoredFile storePgImage(Long propertyId, MultipartFile file) {
         validate(file, IMAGE_CONTENT_TYPES, "Image file is required", "IMAGE_FILE_REQUIRED",
                 "File exceeds allowed size", "FILE_TOO_LARGE", "Invalid image file type", "INVALID_FILE_TYPE");
+        return store(file, "pg-images", propertyId);
+    }
+
+    @Override
+    public StoredFile storeTenantDocument(Long bookingId, MultipartFile file) {
+        validate(file, uploadProperties.allowedContentTypes(), "Document file is required",
+                "DOCUMENT_FILE_REQUIRED", "Document exceeds allowed file size", "DOCUMENT_FILE_TOO_LARGE",
+                "Unsupported document file type", "UNSUPPORTED_DOCUMENT_TYPE");
+        return store(file, "tenant-documents", bookingId);
+    }
+
+    @Override
+    public StoredFile storeRentalAgreement(Long bookingId, MultipartFile file) {
+        validate(file, uploadProperties.allowedContentTypes(), "Agreement file is required",
+                "AGREEMENT_FILE_REQUIRED", "Agreement exceeds allowed file size", "AGREEMENT_FILE_TOO_LARGE",
+                "Unsupported agreement file type", "UNSUPPORTED_AGREEMENT_TYPE");
+        return store(file, "rental-agreements", bookingId);
+    }
+
+    private StoredFile store(MultipartFile file, String folder, Long ownerId) {
         String originalFileName = cleanFileName(file.getOriginalFilename());
         String extension = extensionFor(originalFileName, file.getContentType());
         String storedFileName = UUID.randomUUID() + extension;
         Path root = rootPath();
-        Path imageDirectory = root.resolve("pg-images").resolve(propertyId.toString()).normalize();
-        Path target = imageDirectory.resolve(storedFileName).normalize();
-        if (!target.startsWith(imageDirectory)) {
+        Path directory = root.resolve(folder).resolve(ownerId.toString()).normalize();
+        Path target = directory.resolve(storedFileName).normalize();
+        if (!target.startsWith(directory)) {
             throw new BusinessRuleException("Invalid upload path", "INVALID_UPLOAD_PATH");
         }
         try {
-            Files.createDirectories(imageDirectory);
+            Files.createDirectories(directory);
             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
-            String publicUrl = "/uploads/pg-images/" + propertyId + "/" + storedFileName;
+            String publicUrl = "/uploads/" + folder + "/" + ownerId + "/" + storedFileName;
             return new StoredFile(publicUrl, originalFileName, file.getContentType(), file.getSize());
         } catch (IOException ex) {
             throw new BusinessRuleException("Unable to store uploaded file", "UPLOAD_STORAGE_FAILED");

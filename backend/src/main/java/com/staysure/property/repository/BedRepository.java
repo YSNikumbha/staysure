@@ -8,12 +8,15 @@ import com.staysure.property.enums.BedStatus;
 import com.staysure.property.enums.FloorStatus;
 import com.staysure.property.enums.PropertyStatus;
 import com.staysure.property.enums.RoomStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface BedRepository extends JpaRepository<Bed, Long> {
     List<Bed> findAllByRoomAndStatusNotOrderByBedNumberAsc(Room room, BedStatus status);
@@ -60,6 +63,13 @@ public interface BedRepository extends JpaRepository<Bed, Long> {
 
     @Query("select b.room.id, count(b) from Bed b where b.room.id in :roomIds and b.status = :status group by b.room.id")
     List<Object[]> countByRoomIdsAndStatus(@Param("roomIds") Collection<Long> roomIds, @Param("status") BedStatus status);
+
+    @Query("select b from Bed b where b.room.id in :roomIds and b.status = :status order by b.room.id asc, b.bedNumber asc")
+    List<Bed> findByRoomIdsAndStatus(@Param("roomIds") Collection<Long> roomIds, @Param("status") BedStatus status);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select b from Bed b where b.id = :id")
+    Optional<Bed> findLockedById(@Param("id") Long id);
 
     @Query("select count(b) from Bed b where b.room.floor.property.owner = :owner and b.status <> :bedStatus and b.room.status <> :roomStatus and b.room.floor.status <> :floorStatus and b.room.floor.property.status <> :propertyStatus")
     long countByOwnerAndStatusesNot(@Param("owner") OwnerProfile owner,

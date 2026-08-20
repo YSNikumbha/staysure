@@ -29,8 +29,11 @@ export function AppLayout({ children }: AppLayoutProps) {
             <>
               <NavLink to="/profile">Profile</NavLink>
               <NavLink to="/wishlist">Wishlist</NavLink>
+              <NavLink to="/bookings">My Bookings</NavLink>
+              <NavLink to="/my-pg">My PG</NavLink>
               {!roles.includes('PG_OWNER') ? <NavLink to="/owner/apply">Owner Application</NavLink> : null}
               {roles.includes('PG_OWNER') ? <NavLink to="/owner/dashboard">Owner</NavLink> : null}
+              {roles.includes('PG_OWNER') ? <NavLink to="/owner/bookings">Owner Bookings</NavLink> : null}
               {roles.includes('SUPER_ADMIN') ? <NavLink to="/admin/dashboard">Admin</NavLink> : null}
             </>
           ) : (

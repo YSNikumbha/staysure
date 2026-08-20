@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { publicApi } from '../api/public.api';
 import { wishlistApi } from '../api/wishlist.api';
+import { BookingModal } from '../components/BookingModal';
 import { FormMessage } from '../components/FormMessage';
 import { PageHeader } from '../components/PageHeader';
 import { StatusBadge } from '../components/StatusBadge';
@@ -18,6 +19,7 @@ export function PublicPgDetailsPage() {
   const queryClient = useQueryClient();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [message, setMessage] = useState<string | null>(null);
+  const [bookingOpen, setBookingOpen] = useState(false);
 
   const pgQuery = useQuery({
     queryKey: ['public-pg', slug],
@@ -91,6 +93,14 @@ export function PublicPgDetailsPage() {
     }
   };
 
+  const openBooking = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    setBookingOpen(true);
+  };
+
   return (
     <div className="stack">
       <PageHeader
@@ -151,6 +161,12 @@ export function PublicPgDetailsPage() {
           <span>Food</span>
           <strong>{pg.foodAvailable ? 'Available' : 'Not available'}</strong>
         </div>
+        <div>
+          <span>Booking</span>
+          <button className="primary-button compact-button" type="button" disabled={pg.availableBedCount === 0} onClick={openBooking}>
+            Request
+          </button>
+        </div>
       </section>
 
       <section className="surface">
@@ -174,6 +190,10 @@ export function PublicPgDetailsPage() {
               <div>
                 <span>Available beds</span>
                 <strong>{room.availableBeds}</strong>
+              </div>
+              <div>
+                <span>Bookable beds</span>
+                <strong>{room.beds.map((bed) => bed.bedLabel || bed.bedNumber).join(', ')}</strong>
               </div>
               <div className="badge-row">
                 {room.acAvailable ? <StatusBadge status="AC" /> : null}
@@ -225,6 +245,18 @@ export function PublicPgDetailsPage() {
         <h2>Location</h2>
         <p className="muted-copy">{pg.area}, {pg.city}, {pg.state}</p>
       </section>
+
+      {bookingOpen ? (
+        <BookingModal
+          pg={pg}
+          onClose={() => setBookingOpen(false)}
+          onSuccess={(bookingId) => {
+            setBookingOpen(false);
+            setMessage('Booking request submitted.');
+            navigate(`/bookings/${bookingId}`);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
