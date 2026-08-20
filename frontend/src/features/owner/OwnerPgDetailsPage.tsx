@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router-dom';
 import { propertyApi } from '../../api/property.api';
 import { FormMessage } from '../../components/FormMessage';
-import { PageHeader } from '../../components/PageHeader';
 import { StatusBadge } from '../../components/StatusBadge';
 import type {
   Bed,
@@ -14,6 +13,7 @@ import type {
   FurnishingType,
   ImageCategory,
   OwnerEditableBedStatus,
+  PropertyVerificationStatus,
   Room,
   RoomInput,
   RoomStatus,
@@ -284,11 +284,22 @@ export function OwnerPgDetailsPage({ focus = 'overview' }: OwnerPgDetailsPagePro
   });
 
   if (propertyQuery.isLoading) {
-    return <div className="route-state">Loading</div>;
+    return (
+      <OwnerShell title="PG Management" eyebrow="Property inventory">
+        <div className="owner-stack">
+          <div className="owner-skeleton-card" />
+          <div className="owner-skeleton-card" />
+        </div>
+      </OwnerShell>
+    );
   }
 
   if (propertyQuery.isError || !details) {
-    return <div className="route-state">{getApiErrorMessage(propertyQuery.error, 'Unable to load PG')}</div>;
+    return (
+      <OwnerShell title="PG Management" eyebrow="Property inventory">
+        <div className="route-state">{getApiErrorMessage(propertyQuery.error, 'Unable to load PG')}</div>
+      </OwnerShell>
+    );
   }
 
   const property = details.property;
@@ -358,27 +369,25 @@ export function OwnerPgDetailsPage({ focus = 'overview' }: OwnerPgDetailsPagePro
   };
 
   return (
-    <OwnerShell>
-      <div className="stack">
-        <PageHeader
-          eyebrow="PG management"
-          title={property.name}
-          actions={
-            <div className="action-row">
-              <Link className="secondary-link" to="/owner/pgs">Back</Link>
-              <Link className="primary-link" to={`/owner/pgs/${pgId}/edit`}>Edit PG</Link>
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => submitVerificationMutation.mutate()}
-                disabled={submitVerificationMutation.isPending || property.verificationStatus === 'PENDING' || property.verificationStatus === 'UNDER_REVIEW' || property.verificationStatus === 'VERIFIED'}
-              >
-                Submit Verification
-              </button>
-            </div>
-          }
-        />
-
+    <OwnerShell
+      title={property.name}
+      eyebrow="PG management"
+      actions={
+        <div className="action-row">
+          <Link className="secondary-link compact-button" to="/owner/pgs">Back</Link>
+          <Link className="primary-link compact-button" to={`/owner/pgs/${pgId}/edit`}>Edit PG</Link>
+          <button
+            className="secondary-button compact-button"
+            type="button"
+            onClick={() => submitVerificationMutation.mutate()}
+            disabled={submitVerificationMutation.isPending || property.verificationStatus === 'PENDING' || property.verificationStatus === 'UNDER_REVIEW' || property.verificationStatus === 'VERIFIED'}
+          >
+            Submit Verification
+          </button>
+        </div>
+      }
+    >
+      <div className="owner-stack owner-pg-workspace">
         <div className="segmented">
           <NavLink end to={`/owner/pgs/${pgId}`}>Overview</NavLink>
           <NavLink to={`/owner/pgs/${pgId}/floors`}>Floors</NavLink>
@@ -388,13 +397,15 @@ export function OwnerPgDetailsPage({ focus = 'overview' }: OwnerPgDetailsPagePro
 
         <section className="surface status-surface">
           <div>
+            <p className="eyebrow">Listing status</p>
             <h2>{property.area}, {property.city}</h2>
             <p>{property.addressLine1} · {property.genderType.replaceAll('_', ' ')} · {property.propertyType.replaceAll('_', ' ')}</p>
             {property.verificationRemarks || property.rejectionReason ? <p>{property.rejectionReason || property.verificationRemarks}</p> : null}
           </div>
-          <div className="badge-row">
+          <div className="owner-status-stack">
             <StatusBadge status={property.status} />
             <StatusBadge status={property.verificationStatus} />
+            <span>{verificationHint(property.verificationStatus)}</span>
           </div>
         </section>
 
@@ -445,6 +456,7 @@ export function OwnerPgDetailsPage({ focus = 'overview' }: OwnerPgDetailsPagePro
           </section>
         ) : null}
 
+        {focus === 'floors' ? (
         <section className="surface management-section" id="floors">
           <div className="section-heading">
             <h2>Floors</h2>
@@ -480,7 +492,9 @@ export function OwnerPgDetailsPage({ focus = 'overview' }: OwnerPgDetailsPagePro
             </button>
           </div>
         </section>
+        ) : null}
 
+        {focus === 'rooms' ? (
         <section className="surface management-section" id="rooms">
           <div className="section-heading">
             <h2>Rooms</h2>
@@ -559,7 +573,9 @@ export function OwnerPgDetailsPage({ focus = 'overview' }: OwnerPgDetailsPagePro
             </button>
           </div>
         </section>
+        ) : null}
 
+        {focus === 'beds' ? (
         <section className="surface management-section" id="beds">
           <div className="section-heading">
             <h2>Beds</h2>
@@ -617,7 +633,9 @@ export function OwnerPgDetailsPage({ focus = 'overview' }: OwnerPgDetailsPagePro
             </button>
           </div>
         </section>
+        ) : null}
 
+        {focus === 'overview' ? (
         <section className="surface management-section">
           <div className="section-heading">
             <h2>Amenities</h2>
@@ -650,7 +668,9 @@ export function OwnerPgDetailsPage({ focus = 'overview' }: OwnerPgDetailsPagePro
             {amenitiesQuery.isLoading ? <p>Loading amenities</p> : null}
           </div>
         </section>
+        ) : null}
 
+        {focus === 'overview' ? (
         <section className="surface management-section">
           <div className="section-heading">
             <h2>Gallery</h2>
@@ -703,7 +723,9 @@ export function OwnerPgDetailsPage({ focus = 'overview' }: OwnerPgDetailsPagePro
             {details.images.length === 0 ? <p>No images uploaded.</p> : null}
           </div>
         </section>
+        ) : null}
 
+        {focus === 'overview' ? (
         <section className="surface management-section">
           <h2>Property Rules</h2>
           <div className="rule-grid">
@@ -722,6 +744,7 @@ export function OwnerPgDetailsPage({ focus = 'overview' }: OwnerPgDetailsPagePro
             </div>
           </div>
         </section>
+        ) : null}
 
         <section className="surface management-section">
           <h2>Complete PG Structure</h2>
@@ -852,6 +875,25 @@ function confirmArchiveRoom(room: Room, archive: (input: { floorId: number; room
 function confirmArchiveBed(floorId: number, bed: Bed, archive: (input: { floorId: number; roomId: number; bedId: number }) => void) {
   if (window.confirm(`Archive bed ${bed.bedLabel || bed.bedNumber}?`)) {
     archive({ floorId, roomId: bed.roomId, bedId: bed.id });
+  }
+}
+
+function verificationHint(status: PropertyVerificationStatus) {
+  switch (status) {
+    case 'NOT_SUBMITTED':
+      return 'Complete inventory and submit for admin verification.';
+    case 'PENDING':
+      return 'Waiting for admin review.';
+    case 'UNDER_REVIEW':
+      return 'Admin review is in progress.';
+    case 'VERIFIED':
+      return 'Visible publicly when listing status is ACTIVE.';
+    case 'REJECTED':
+      return 'Review admin feedback, update details and resubmit.';
+    case 'CHANGES_REQUESTED':
+      return 'Make requested changes and submit again.';
+    default:
+      return 'Verification status unavailable.';
   }
 }
 

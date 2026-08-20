@@ -7,7 +7,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
 import { propertyApi } from '../../api/property.api';
 import { FormMessage } from '../../components/FormMessage';
-import { PageHeader } from '../../components/PageHeader';
 import type { GenderType, PgPropertyInput, PropertyStatus, PropertyType } from '../../types/property';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { OwnerShell } from './OwnerShell';
@@ -174,25 +173,47 @@ export function OwnerPgFormPage() {
   const title = useMemo(() => (isEdit ? 'Edit PG' : 'Create PG'), [isEdit]);
 
   if (propertyQuery.isLoading) {
-    return <div className="route-state">Loading</div>;
+    return (
+      <OwnerShell title={title} eyebrow="Property inventory">
+        <div className="owner-stack">
+          <div className="owner-skeleton-card" />
+          <div className="owner-skeleton-card" />
+        </div>
+      </OwnerShell>
+    );
   }
 
   if (propertyQuery.isError) {
-    return <div className="route-state">{getApiErrorMessage(propertyQuery.error, 'Unable to load PG')}</div>;
+    return (
+      <OwnerShell title={title} eyebrow="Property inventory">
+        <div className="route-state">{getApiErrorMessage(propertyQuery.error, 'Unable to load PG')}</div>
+      </OwnerShell>
+    );
   }
 
   return (
-    <OwnerShell>
-      <div className="stack">
-        <PageHeader
-          eyebrow="Property inventory"
-          title={title}
-          actions={<Link className="secondary-link" to={isEdit ? `/owner/pgs/${pgId}` : '/owner/pgs'}>Back</Link>}
-        />
+    <OwnerShell
+      title={title}
+      eyebrow="Property inventory"
+      actions={<Link className="secondary-link compact-button" to={isEdit ? `/owner/pgs/${pgId}` : '/owner/pgs'}>Back</Link>}
+    >
+      <form className="owner-form-layout" onSubmit={form.handleSubmit((values) => saveMutation.mutate(values))}>
+        <aside className="owner-form-nav" aria-label="Property form sections">
+          <p className="eyebrow">Sections</p>
+          <a href="#basic">Basic Information</a>
+          <a href="#location">Location</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#rules">Rules</a>
+          <button className="primary-button" type="submit" disabled={saveMutation.isPending}>
+            <Save size={18} />
+            {saveMutation.isPending ? 'Saving' : 'Save PG'}
+          </button>
+        </aside>
 
-        <form className="stack" onSubmit={form.handleSubmit((values) => saveMutation.mutate(values))}>
-          <section className="surface form-section">
+        <div className="owner-form-body">
+          <section className="surface form-section" id="basic">
             <h2>Basic Information</h2>
+            <p className="muted-copy">This core listing information is visible to users after admin verification.</p>
             <div className="form-grid two-column">
               <label className="form-span">
                 PG Name
@@ -229,8 +250,9 @@ export function OwnerPgFormPage() {
             </div>
           </section>
 
-          <section className="surface form-section">
+          <section className="surface form-section" id="location">
             <h2>Location</h2>
+            <p className="muted-copy">Use a complete address so the PG can pass verification and appear in location search.</p>
             <div className="form-grid two-column">
               <label className="form-span">
                 Address Line 1
@@ -275,8 +297,9 @@ export function OwnerPgFormPage() {
             </div>
           </section>
 
-          <section className="surface form-section">
+          <section className="surface form-section" id="pricing">
             <h2>Pricing</h2>
+            <p className="muted-copy">Users see starting rent and deposit on cards and the PG detail page.</p>
             <div className="form-grid two-column">
               <label>
                 Starting Rent
@@ -306,8 +329,9 @@ export function OwnerPgFormPage() {
             </div>
           </section>
 
-          <section className="surface form-section">
+          <section className="surface form-section" id="rules">
             <h2>Rules</h2>
+            <p className="muted-copy">Set house rules clearly before submitting the PG for verification.</p>
             <div className="form-grid two-column">
               <label className="checkbox-field">
                 <input type="checkbox" {...form.register('rules.visitorAllowed')} />
@@ -347,15 +371,15 @@ export function OwnerPgFormPage() {
             </div>
           </section>
 
-          <section className="surface">
+          <section className="surface owner-submit-bar">
             <FormMessage message={formError} />
             <button className="primary-button" type="submit" disabled={saveMutation.isPending}>
               <Save size={18} />
               {saveMutation.isPending ? 'Saving' : 'Save PG'}
             </button>
           </section>
-        </form>
-      </div>
+        </div>
+      </form>
     </OwnerShell>
   );
 }

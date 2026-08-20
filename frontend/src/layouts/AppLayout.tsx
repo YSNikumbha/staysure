@@ -27,6 +27,19 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isOwner = roles.includes('PG_OWNER');
   const isAdmin = roles.includes('SUPER_ADMIN');
   const ownerRoute = isAuthenticated && isOwner ? '/owner/dashboard' : '/owner/apply';
+  const isOwnerWorkspace = location.pathname.startsWith('/owner/dashboard')
+    || location.pathname.startsWith('/owner/pgs')
+    || location.pathname.startsWith('/owner/bookings')
+    || location.pathname.startsWith('/owner/tenants');
+  const isAdminWorkspace = location.pathname.startsWith('/admin');
+
+  if (isOwnerWorkspace || isAdminWorkspace) {
+    return (
+      <div className="app-shell app-shell--workspace">
+        <main className="content content--workspace">{children}</main>
+      </div>
+    );
+  }
 
   return (
     <div className="app-shell">
