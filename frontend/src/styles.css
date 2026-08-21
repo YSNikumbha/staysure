@@ -462,6 +462,25 @@ textarea:focus {
   color: #39443e;
 }
 
+.notification-link {
+  position: relative;
+}
+
+.notification-link span {
+  position: absolute;
+  right: -5px;
+  top: -6px;
+  min-width: 18px;
+  min-height: 18px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
 .form-message {
   min-height: 18px;
   margin: 0;

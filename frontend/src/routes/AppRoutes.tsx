@@ -36,6 +36,25 @@ import OwnerRentPage from '../pages/OwnerRentPage';
 import OwnerRentDetailPage from '../pages/OwnerRentDetailPage';
 import RentPage from '../pages/RentPage';
 import RentInvoiceDetailPage from '../pages/RentInvoiceDetailPage';
+import ComplaintsPage from '../pages/ComplaintsPage';
+import CreateComplaintPage from '../pages/CreateComplaintPage';
+import ComplaintDetailPage from '../pages/ComplaintDetailPage';
+import OwnerComplaintsPage from '../pages/OwnerComplaintsPage';
+import OwnerComplaintDetailPage from '../pages/OwnerComplaintDetailPage';
+import OwnerMaintenancePage from '../pages/OwnerMaintenancePage';
+import OwnerMaintenanceDetailPage from '../pages/OwnerMaintenanceDetailPage';
+import NoticesPage from '../pages/NoticesPage';
+import NoticeDetailPage from '../pages/NoticeDetailPage';
+import OwnerNoticesPage from '../pages/OwnerNoticesPage';
+import OwnerNoticeFormPage from '../pages/OwnerNoticeFormPage';
+import FoodPage from '../pages/FoodPage';
+import OwnerFoodPage from '../pages/OwnerFoodPage';
+import VisitorsPage from '../pages/VisitorsPage';
+import CreateVisitorPage from '../pages/CreateVisitorPage';
+import VisitorDetailPage from '../pages/VisitorDetailPage';
+import OwnerVisitorsPage from '../pages/OwnerVisitorsPage';
+import OwnerVisitorDetailPage from '../pages/OwnerVisitorDetailPage';
+import NotificationsPage from '../pages/NotificationsPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { RoleProtectedRoute } from './RoleProtectedRoute';
 
@@ -118,6 +137,16 @@ export function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route path="/complaints" element={<ProtectedRoute><ComplaintsPage /></ProtectedRoute>} />
+        <Route path="/complaints/new" element={<ProtectedRoute><CreateComplaintPage /></ProtectedRoute>} />
+        <Route path="/complaints/:id" element={<ProtectedRoute><ComplaintDetailPage /></ProtectedRoute>} />
+        <Route path="/notices" element={<ProtectedRoute><NoticesPage /></ProtectedRoute>} />
+        <Route path="/notices/:id" element={<ProtectedRoute><NoticeDetailPage /></ProtectedRoute>} />
+        <Route path="/food" element={<ProtectedRoute><FoodPage /></ProtectedRoute>} />
+        <Route path="/visitors" element={<ProtectedRoute><VisitorsPage /></ProtectedRoute>} />
+        <Route path="/visitors/new" element={<ProtectedRoute><CreateVisitorPage /></ProtectedRoute>} />
+        <Route path="/visitors/:id" element={<ProtectedRoute><VisitorDetailPage /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         <Route
           path="/owner/apply"
           element={
@@ -238,6 +267,16 @@ export function AppRoutes() {
             </RoleProtectedRoute>
           }
         />
+        <Route path="/owner/complaints" element={<RoleProtectedRoute role="PG_OWNER"><OwnerComplaintsPage /></RoleProtectedRoute>} />
+        <Route path="/owner/complaints/:id" element={<RoleProtectedRoute role="PG_OWNER"><OwnerComplaintDetailPage /></RoleProtectedRoute>} />
+        <Route path="/owner/maintenance" element={<RoleProtectedRoute role="PG_OWNER"><OwnerMaintenancePage /></RoleProtectedRoute>} />
+        <Route path="/owner/maintenance/:id" element={<RoleProtectedRoute role="PG_OWNER"><OwnerMaintenanceDetailPage /></RoleProtectedRoute>} />
+        <Route path="/owner/notices" element={<RoleProtectedRoute role="PG_OWNER"><OwnerNoticesPage /></RoleProtectedRoute>} />
+        <Route path="/owner/notices/new" element={<RoleProtectedRoute role="PG_OWNER"><OwnerNoticeFormPage /></RoleProtectedRoute>} />
+        <Route path="/owner/notices/:id/edit" element={<RoleProtectedRoute role="PG_OWNER"><OwnerNoticeFormPage /></RoleProtectedRoute>} />
+        <Route path="/owner/food" element={<RoleProtectedRoute role="PG_OWNER"><OwnerFoodPage /></RoleProtectedRoute>} />
+        <Route path="/owner/visitors" element={<RoleProtectedRoute role="PG_OWNER"><OwnerVisitorsPage /></RoleProtectedRoute>} />
+        <Route path="/owner/visitors/:id" element={<RoleProtectedRoute role="PG_OWNER"><OwnerVisitorDetailPage /></RoleProtectedRoute>} />
         <Route
           path="/admin/dashboard"
           element={

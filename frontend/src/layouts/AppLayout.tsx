@@ -1,8 +1,10 @@
-import { Building2, ChevronDown, Heart, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, Wallet, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Bell, Building2, ChevronDown, Heart, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, Wallet, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { PublicFooter } from '../components/PublicFooter';
+import { notificationsApi } from '../api/operations.api';
 import { useAuthStore } from '../store/authStore';
 
 type AppLayoutProps = {
@@ -14,6 +16,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const { user, isAuthenticated, roles, logout } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
+  const unreadQuery = useQuery({
+    queryKey: ['notifications-unread-count'],
+    queryFn: notificationsApi.unreadCount,
+    enabled: isAuthenticated
+  });
+  const unreadCount = unreadQuery.data ?? 0;
 
   useEffect(() => {
     setMenuOpen(false);
@@ -31,7 +39,12 @@ export function AppLayout({ children }: AppLayoutProps) {
     || location.pathname.startsWith('/owner/pgs')
     || location.pathname.startsWith('/owner/bookings')
     || location.pathname.startsWith('/owner/tenants')
-    || location.pathname.startsWith('/owner/rent');
+    || location.pathname.startsWith('/owner/rent')
+    || location.pathname.startsWith('/owner/complaints')
+    || location.pathname.startsWith('/owner/maintenance')
+    || location.pathname.startsWith('/owner/notices')
+    || location.pathname.startsWith('/owner/food')
+    || location.pathname.startsWith('/owner/visitors');
   const isAdminWorkspace = location.pathname.startsWith('/admin');
 
   if (isOwnerWorkspace || isAdminWorkspace) {
@@ -58,6 +71,10 @@ export function AppLayout({ children }: AppLayoutProps) {
               <NavLink to="/wishlist">Wishlist</NavLink>
               <NavLink to="/bookings">My Bookings</NavLink>
               <NavLink to="/rent">Rent</NavLink>
+              <NavLink to="/complaints">Complaints</NavLink>
+              <NavLink to="/notices">Notices</NavLink>
+              <NavLink to="/food">Food</NavLink>
+              <NavLink to="/visitors">Visitors</NavLink>
             </>
           ) : (
             <NavLink to="/wishlist" aria-label="Wishlist"><Heart size={17} /></NavLink>
@@ -83,6 +100,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                   Admin
                 </Link>
               ) : null}
+              <Link className="icon-link notification-link" to="/notifications" aria-label="Notifications">
+                <Bell size={17} />
+                {unreadCount > 0 ? <span>{unreadCount}</span> : null}
+              </Link>
               <details className="user-menu">
                 <summary>
                   <span className="avatar">{user.firstName.charAt(0).toUpperCase()}</span>
@@ -93,8 +114,13 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <Link to="/profile">Profile</Link>
                   <Link to="/my-pg">My PG</Link>
                   <Link to="/rent">Rent</Link>
+                  <Link to="/complaints">Complaints</Link>
+                  <Link to="/notices">Notices</Link>
+                  <Link to="/food">Food</Link>
+                  <Link to="/visitors">Visitors</Link>
                   <Link to="/wishlist">Wishlist</Link>
                   <Link to="/bookings">My Bookings</Link>
+                  <Link to="/notifications">Notifications {unreadCount > 0 ? `(${unreadCount})` : ''}</Link>
                   {!isOwner ? <Link to="/owner/apply">Become an Owner</Link> : null}
                   {isOwner ? <Link to="/owner/dashboard">Owner Dashboard</Link> : null}
                   {isAdmin ? <Link to="/admin/dashboard">Admin Dashboard</Link> : null}
@@ -137,6 +163,11 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <NavLink to="/wishlist">Wishlist</NavLink>
                 <NavLink to="/bookings">My Bookings</NavLink>
                 <NavLink to="/rent"><Wallet size={17} /> Rent</NavLink>
+                <NavLink to="/complaints">Complaints</NavLink>
+                <NavLink to="/notices">Notices</NavLink>
+                <NavLink to="/food">Food</NavLink>
+                <NavLink to="/visitors">Visitors</NavLink>
+                <NavLink to="/notifications"><Bell size={17} /> Notifications {unreadCount > 0 ? `(${unreadCount})` : ''}</NavLink>
                 <NavLink to="/my-pg">My PG</NavLink>
                 <NavLink to="/profile">Profile</NavLink>
                 {!isOwner ? <NavLink to="/owner/apply">Become an Owner</NavLink> : null}

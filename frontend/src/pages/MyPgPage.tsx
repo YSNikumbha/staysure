@@ -31,6 +31,21 @@ export default function MyPgPage() {
         <div><span>Security Deposit</span><strong>Rs {Number(booking.securityDeposit).toLocaleString()}</strong></div>
         <div><span>Expected Checkout</span><strong>{booking.expectedMoveOutDate ?? '-'}</strong></div>
       </section>
+      <section className="surface">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Quick actions</p>
+            <h2>Manage your stay</h2>
+          </div>
+        </div>
+        <div className="action-row">
+          <Link className="secondary-link" to="/rent">Rent</Link>
+          <Link className="secondary-link" to="/complaints/new">Raise Complaint</Link>
+          <Link className="secondary-link" to="/notices">Notices</Link>
+          <Link className="secondary-link" to="/food">Food Menu</Link>
+          <Link className="secondary-link" to="/visitors">Visitors</Link>
+        </div>
+      </section>
     </div>
   );
 }
